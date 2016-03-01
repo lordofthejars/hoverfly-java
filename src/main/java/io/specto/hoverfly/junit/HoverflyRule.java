@@ -1,24 +1,23 @@
-import com.google.common.base.MoreObjects;
-import com.google.common.io.Resources;
+package io.specto.hoverfly.junit;
+
 import org.junit.rules.ExternalResource;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static io.specto.hoverfly.junit.HoverflyRuleUtils.getBinaryUrl;
+import static io.specto.hoverfly.junit.HoverflyRuleUtils.getResource;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 
 public class HoverflyRule extends ExternalResource {
 
-    private static final String HOVERFLY_BINARY_PATH = "hoverfly";
     private static final String HOVERFLY_DB_PATH = "requests.db";
 
     private final URL serviceDataUrl;
@@ -30,7 +29,8 @@ public class HoverflyRule extends ExternalResource {
     public HoverflyRule(final String serviceDataResourceName) {
         serviceDataUrl = getResource(serviceDataResourceName)
                 .orElseThrow(() -> new IllegalArgumentException("Service data not found at " + serviceDataResourceName));
-        hoverflyUrl = getResource(HOVERFLY_BINARY_PATH).get();
+        hoverflyUrl = getBinaryUrl();
+        databaseUrl = getResource(HOVERFLY_DB_PATH);
         System.setProperty("http.proxyHost", "localhost");
         System.setProperty("http.proxyPort", "8500");
     }
@@ -42,7 +42,7 @@ public class HoverflyRule extends ExternalResource {
 
         final Path pathToHoverfly = Paths.get(hoverflyUrl.toURI());
 
-        if(!pathToHoverfly.toFile().canExecute()) {
+        if (!pathToHoverfly.toFile().canExecute()) {
             final Set<PosixFilePermission> perms = newHashSet(OWNER_EXECUTE);
             Files.setPosixFilePermissions(Paths.get(hoverflyUrl.toURI()), perms);
         }
@@ -53,7 +53,7 @@ public class HoverflyRule extends ExternalResource {
         final ProcessBuilder builder = new ProcessBuilder()
                 .inheritIO()
                 .directory(directoryOfBinary.toFile())
-                .command("./" + binaryName.toString(), "-import", serviceDataUrl.getPath());
+                .command("./" + binaryName.toString(), "-import", serviceDataUrl.getPath(), "-wipedb");
 
         hoverflyProcess = builder.start();
     }
@@ -72,16 +72,5 @@ public class HoverflyRule extends ExternalResource {
 
     private void tearDownDatabaseIfExists() throws IOException {
         databaseUrl = getResource(HOVERFLY_DB_PATH);
-
-        if (databaseUrl.isPresent()) {
-            Files.delete(Paths.get(databaseUrl.get().getPath()));
-        }
-    }
-
-    private static Optional<URL> getResource(String resourceName) {
-        ClassLoader loader = MoreObjects.firstNonNull(
-                Thread.currentThread().getContextClassLoader(),
-                Resources.class.getClassLoader());
-        return Optional.ofNullable(loader.getResource(resourceName));
     }
 }
