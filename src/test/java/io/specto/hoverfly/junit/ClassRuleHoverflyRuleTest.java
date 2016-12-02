@@ -1,8 +1,7 @@
 package io.specto.hoverfly.junit;
 
-import io.specto.hoverfly.webserver.ImportTestWebServer;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +9,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 
 import static net.javacrumbs.jsonunit.fluent.JsonFluentAssert.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,20 +16,18 @@ import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-public class URLHoverflyRuleTest {
+public class ClassRuleHoverflyRuleTest {
 
-    private static URL webServerUri;
+    // tag::classRuleExample[]
+    @ClassRule
+    public static HoverflyRule hoverflyRule = HoverflyRule.inSimulationMode("test-service.json");
+    // end::classRuleExample[]
 
-    // tag::urlExample[]
-    @Rule
-    public HoverflyRule hoverflyRule = HoverflyRule.inSimulationMode(webServerUri);
-    // end::urlExample[]
+    private RestTemplate restTemplate;
 
-    private RestTemplate restTemplate = new RestTemplate();
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        webServerUri = ImportTestWebServer.run();
+    @Before
+    public void setUp() {
+        restTemplate = new RestTemplate();
     }
 
     @Test
