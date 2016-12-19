@@ -1,24 +1,20 @@
 package io.specto.hoverfly.junit.dsl;
 
 import io.specto.hoverfly.junit.core.model.RequestResponsePair;
-import io.specto.hoverfly.junit.core.model.Simulation;
 import org.junit.Test;
 
 import java.util.Set;
 
 import static io.specto.hoverfly.junit.dsl.HoverflyDsl.service;
-import static io.specto.hoverfly.junit.dsl.HoverflyRequestBuilder.requestPath;
-import static io.specto.hoverfly.junit.dsl.HoverflyResponseBuilder.response;
+import static io.specto.hoverfly.junit.dsl.ResponseBuilder.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HoverflyStubServiceTest {
+public class PairsBuilderTest {
 
     @Test
-    public void shouldExtractUrlScheme() throws Exception {
+    public void shouldExtractHttpsUrlScheme() throws Exception {
 
-        Simulation simulation = service("https://www.my-test.com").get(requestPath("/")).willReturn(response()).build();
-
-        Set<RequestResponsePair> pairs = simulation.getHoverflyData().getPairs();
+        final Set<RequestResponsePair> pairs = service("https://www.my-test.com").get("/").willReturn(response()).getPairs();
 
         assertThat(pairs).hasSize(1);
         RequestResponsePair pair = pairs.iterator().next();
@@ -28,9 +24,18 @@ public class HoverflyStubServiceTest {
 
     @Test
     public void shouldDefaultToHttpScheme() throws Exception {
-        Simulation simulation = service("www.my-test.com").get(requestPath("/")).willReturn(response()).build();
+        final Set<RequestResponsePair> pairs = service("www.my-test.com").get("/").willReturn(response()).getPairs();
 
-        Set<RequestResponsePair> pairs = simulation.getHoverflyData().getPairs();
+        assertThat(pairs).hasSize(1);
+        RequestResponsePair pair = pairs.iterator().next();
+        assertThat(pair.getRequest().getDestination()).isEqualTo("www.my-test.com");
+        assertThat(pair.getRequest().getScheme()).isEqualTo("http");
+
+    }
+
+    @Test
+    public void shouldExtractHttpScheme() throws Exception {
+        final Set<RequestResponsePair> pairs = service("http://www.my-test.com").get("/").willReturn(response()).getPairs();
 
         assertThat(pairs).hasSize(1);
         RequestResponsePair pair = pairs.iterator().next();

@@ -1,6 +1,11 @@
-package io.specto.hoverfly.junit.rule;
+package io.specto.hoverfly.ruletest;
 
 import org.junit.ClassRule;
+import io.specto.hoverfly.junit.rule.HoverflyRule;
+import io.specto.hoverfly.webserver.ImportTestWebServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -13,6 +18,7 @@ public class HttpsHoverflyRuleTest {
 
     @ClassRule
     public static HoverflyRule hoverflyRule = HoverflyRule.inSimulationMode("test-service.json");
+
     private RestTemplate restTemplate = new RestTemplate();
 
     @Test
@@ -30,5 +36,4 @@ public class HttpsHoverflyRuleTest {
                 "\"_links\":{\"self\":{\"href\":\"http://localhost/api/bookings/1\"}}" +
                 "}");
     }
-
 }

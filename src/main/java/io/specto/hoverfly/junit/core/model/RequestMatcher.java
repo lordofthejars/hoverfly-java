@@ -5,11 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class RequestDetails {
+public class RequestMatcher {
     private final String requestType = "recording";
     private final String path;
     private final String method;
@@ -20,13 +19,13 @@ public class RequestDetails {
     private final Map<String, List<String>> headers;
 
     @JsonCreator
-    public RequestDetails(@JsonProperty("path") String path,
-                           @JsonProperty("method") String method,
-                           @JsonProperty("destination") String destination,
-                           @JsonProperty("scheme") String scheme,
-                           @JsonProperty("query") String query,
-                           @JsonProperty("body") String body,
-                           @JsonProperty("headers") Map<String, List<String>> headers) {
+    public RequestMatcher(@JsonProperty("path") String path,
+                          @JsonProperty("method") String method,
+                          @JsonProperty("destination") String destination,
+                          @JsonProperty("scheme") String scheme,
+                          @JsonProperty("query") String query,
+                          @JsonProperty("body") String body,
+                          @JsonProperty("headers") Map<String, List<String>> headers) {
         this.path = path;
         this.method = method;
         this.destination = destination;

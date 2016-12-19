@@ -5,22 +5,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ResponseDetails {
+public class Response {
     private final int status;
     private final String body;
     private final boolean encodedBody;
     private final Map<String, List<String>> headers;
 
     @JsonCreator
-    public ResponseDetails(@JsonProperty("status") int status,
-                            @JsonProperty("body") String body,
-                            @JsonProperty("encodedBody") boolean encodedBody,
-                            @JsonProperty("headers") Map<String, List<String>> headers) {
+    public Response(@JsonProperty("status") int status,
+                    @JsonProperty("body") String body,
+                    @JsonProperty("encodedBody") boolean encodedBody,
+                    @JsonProperty("headers") Map<String, List<String>> headers) {
         this.status = status;
         this.body = body;
         this.encodedBody = encodedBody;

@@ -1,6 +1,7 @@
-package io.specto.hoverfly.junit.rule;
+package io.specto.hoverfly.ruletest;
 
 import org.junit.ClassRule;
+import io.specto.hoverfly.junit.rule.HoverflyRule;
 
 public class ClasspathResourceHoverflyRuleTest {
 

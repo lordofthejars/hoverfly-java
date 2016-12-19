@@ -1,5 +1,6 @@
-package io.specto.hoverfly.junit.rule;
+package io.specto.hoverfly.ruletest;
 
+import io.specto.hoverfly.junit.rule.HoverflyRule;
 import io.specto.hoverfly.webserver.ImportTestWebServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

@@ -1,6 +1,7 @@
-package io.specto.hoverfly.junit.rule;
+package io.specto.hoverfly.ruletest;
 
 import com.google.common.io.Resources;
+import io.specto.hoverfly.junit.rule.HoverflyRule;
 import io.specto.hoverfly.webserver.CaptureModeTestWebServer;
 import org.json.JSONException;
 import org.junit.AfterClass;
@@ -35,6 +36,16 @@ public class CaptureModeTest {
     private URI webServerBaseUrl;
     private RestTemplate restTemplate = new RestTemplate();
 
+    // We have to assert after the rule has executed because that's when the file is written to the filesystem
+    @AfterClass
+    public static void after() throws IOException, JSONException {
+        final String expectedSimulation = Resources.toString(Resources.getResource(EXPECTED_SIMULATION_JSON), defaultCharset());
+        final String actualSimulation = new String(Files.readAllBytes(RECORDED_SIMULATION_FILE), defaultCharset());
+        JSONAssert.assertEquals(expectedSimulation, actualSimulation, JSONCompareMode.LENIENT);
+
+        CaptureModeTestWebServer.terminate();
+    }
+
     @Before
     public void setUp() throws Exception {
         Files.deleteIfExists(RECORDED_SIMULATION_FILE);
@@ -45,17 +56,6 @@ public class CaptureModeTest {
     public void shouldRecordInteractions() throws Exception {
         // When
         restTemplate.getForObject(webServerBaseUrl, String.class);
-    }
-
-
-    // We have to assert after the rule has executed because that's when the file is written to the filesystem
-    @AfterClass
-    public static void after() throws IOException, JSONException {
-        final String expectedSimulation = Resources.toString(Resources.getResource(EXPECTED_SIMULATION_JSON), defaultCharset());
-        final String actualSimulation = new String(Files.readAllBytes(RECORDED_SIMULATION_FILE), defaultCharset());
-        JSONAssert.assertEquals(expectedSimulation, actualSimulation, JSONCompareMode.LENIENT);
-
-        CaptureModeTestWebServer.terminate();
     }
 
 }

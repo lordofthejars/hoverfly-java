@@ -1,4 +1,4 @@
-package io.specto.hoverfly.junit.rule;
+package io.specto.hoverfly.ruletest;
 
 import org.junit.Ignore;
 import org.junit.Test;
