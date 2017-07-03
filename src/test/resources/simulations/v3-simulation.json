@@ -4,29 +4,24 @@
 			{
 				"response": {
 					"status": 200,
-					"body": "\u003ch1\u003eHello Other World\u003c/h1\u003e\n",
+					"body": "{\"bookingId\":\"1\"}",
 					"encodedBody": false,
 					"headers": {
-						"Content-Length": [
-							"27"
-						],
 						"Content-Type": [
-							"text/html;charset=utf-8"
-						],
-						"Hoverfly": [
-							"Was-Here"
-						],
-						"Server": [
-							"Jetty(9.3.11.v20160721)"
+							"application/json"
 						]
-					}
+					},
+					"templated": false
 				},
 				"request": {
 					"path": {
-						"exactMatch": "/other"
+						"exactMatch": "/api/bookings/1"
 					},
 					"method": {
 						"exactMatch": "GET"
+					},
+					"destination": {
+						"exactMatch": "www.my-test.com"
 					},
 					"scheme": {
 						"exactMatch": "http"
@@ -36,6 +31,11 @@
 					},
 					"body": {
 						"exactMatch": ""
+					},
+					"headers": {
+						"Content-Type": [
+							"text/plain; charset=utf-8"
+						]
 					}
 				}
 			}
