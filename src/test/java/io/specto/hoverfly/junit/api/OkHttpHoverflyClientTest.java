@@ -53,6 +53,7 @@ public class OkHttpHoverflyClientTest {
 
         assertThat(configInfo.getMode()).isEqualTo(SIMULATE.getValue());
         assertThat(configInfo.getDestination()).isEqualTo(".");
+        assertThat(configInfo.getUpstreamProxy()).isEmpty();
     }
 
     @Test

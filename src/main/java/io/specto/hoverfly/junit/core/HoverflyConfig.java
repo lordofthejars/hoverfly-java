@@ -17,6 +17,8 @@ import io.specto.hoverfly.junit.core.config.HoverflyConfiguration;
 import io.specto.hoverfly.junit.core.config.LocalHoverflyConfig;
 import io.specto.hoverfly.junit.core.config.RemoteHoverflyConfig;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +34,7 @@ public abstract class HoverflyConfig {
     protected String destination;
     protected String proxyCaCert;
     protected List<String> captureHeaders;
+    protected String upstreamProxy;
 
     /**
      * New instance
@@ -124,6 +127,16 @@ public abstract class HoverflyConfig {
      */
     public HoverflyConfig proxyCaCert(String proxyCaCert) {
         this.proxyCaCert = proxyCaCert;
+        return this;
+    }
+
+    /**
+     * Set upstream proxy for hoverfly to connect to target host
+     * @param proxyAddress socket address of the upstream proxy, eg. 127.0.0.1:8500
+     * @return the {@link HoverflyConfig} for further customizations
+     */
+    public HoverflyConfig upstreamProxy(InetSocketAddress proxyAddress) {
+        this.upstreamProxy = proxyAddress.getHostString() + ":" + proxyAddress.getPort();
         return this;
     }
 

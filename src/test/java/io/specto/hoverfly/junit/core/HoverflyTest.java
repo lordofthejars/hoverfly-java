@@ -7,6 +7,7 @@ import com.google.common.io.Resources;
 import io.specto.hoverfly.junit.api.HoverflyClient;
 import io.specto.hoverfly.junit.api.HoverflyClientException;
 import io.specto.hoverfly.junit.api.model.ModeArguments;
+import io.specto.hoverfly.junit.api.view.HoverflyInfoView;
 import io.specto.hoverfly.junit.core.config.HoverflyConfiguration;
 import io.specto.hoverfly.junit.core.model.Simulation;
 import org.apache.http.HttpResponse;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.StartedProcess;
 
 import javax.net.ssl.SSLContext;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.List;
 
@@ -362,6 +364,16 @@ public class HoverflyTest {
         hoverfly.start();
 
         verify(hoverflyClient, never()).setMode(eq(HoverflyMode.SIMULATE), any());
+    }
+
+    @Test
+    public void shouldSetUpstreamProxy() {
+        hoverfly = new Hoverfly(configs().upstreamProxy(new InetSocketAddress("127.0.0.1", 8900)), SIMULATE);
+
+        hoverfly.start();
+        HoverflyInfoView hoverflyInfo = hoverfly.getHoverflyInfo();
+
+        assertThat(hoverflyInfo.getUpstreamProxy()).isEqualTo("http://127.0.0.1:8900");
     }
 
     @Test

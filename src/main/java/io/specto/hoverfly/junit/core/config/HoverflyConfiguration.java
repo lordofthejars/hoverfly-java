@@ -30,6 +30,7 @@ public class HoverflyConfiguration {
     private boolean webServer = false;
     private boolean tlsVerificationDisabled = false;
     private boolean plainHttpTunneling = false;
+    private String upstreamProxy;
 
     /**
      * Create configurations for external hoverfly
@@ -43,8 +44,9 @@ public class HoverflyConfiguration {
                           final String proxyCaCertificate,
                           final String authToken,
                           final String adminCertificate,
-                          final List<String> captureHeaders) {
-        this(proxyPort, adminPort, proxyLocalHost, destination, proxyCaCertificate, null, null, captureHeaders);
+                          final List<String> captureHeaders,
+                          final String upstreamProxy) {
+        this(proxyPort, adminPort, proxyLocalHost, destination, proxyCaCertificate, null, null, captureHeaders, upstreamProxy);
         setScheme(scheme);
         setHost(host);
         this.authToken = authToken;
@@ -62,7 +64,8 @@ public class HoverflyConfiguration {
                           final String proxyCaCertificate,
                           final String sslCertificatePath,
                           final String sslKeyPath,
-                          final List<String> captureHeaders) {
+                          final List<String> captureHeaders,
+                          final String upstreamProxy) {
         this.proxyPort = proxyPort;
         this.adminPort = adminPort;
         this.proxyLocalHost = proxyLocalHost;
@@ -71,6 +74,7 @@ public class HoverflyConfiguration {
         this.sslCertificatePath = sslCertificatePath;
         this.sslKeyPath = sslKeyPath;
         this.captureHeaders = captureHeaders;
+        this.upstreamProxy = upstreamProxy;
     }
 
     /**
@@ -144,6 +148,10 @@ public class HoverflyConfiguration {
 
     public List<String> getCaptureHeaders() {
         return captureHeaders;
+    }
+
+    public String getUpstreamProxy() {
+        return upstreamProxy;
     }
 
     void setHost(String host) {

@@ -31,7 +31,7 @@ public class RemoteHoverflyStubTest {
                         .willReturn(success())
 
                         .put("/api/v2/hoverfly/mode")
-                        .body(HttpBodyConverter.json(new HoverflyInfoView(null, SIMULATE.getValue(), null, null, null)))
+                        .body(HttpBodyConverter.json(new HoverflyInfoView(null, SIMULATE.getValue(), null, null, null, null)))
                         .willReturn(success())
         ));
     }

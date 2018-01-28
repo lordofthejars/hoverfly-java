@@ -198,6 +198,12 @@ public class Hoverfly implements AutoCloseable {
             commands.add("-middleware");
             commands.add(hoverflyConfig.getLocalMiddleware().getBinary() + " " + scriptName);
         }
+
+        if (StringUtils.isNotBlank(hoverflyConfig.getUpstreamProxy())) {
+            commands.add("-upstream-proxy");
+            commands.add(hoverflyConfig.getUpstreamProxy());
+        }
+
         try {
             startedProcess = new ProcessExecutor()
                     .command(commands)

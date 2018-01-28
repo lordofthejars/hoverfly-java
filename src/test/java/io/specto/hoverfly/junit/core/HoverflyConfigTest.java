@@ -5,6 +5,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
+import java.net.InetSocketAddress;
+
 import static io.specto.hoverfly.junit.core.HoverflyConfig.configs;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -162,4 +164,10 @@ public class HoverflyConfigTest {
         assertThat(configs.isMiddlewareEnabled()).isTrue();
     }
 
+    @Test
+    public void shouldSetUpstreamProxy() {
+        HoverflyConfiguration configs = configs().upstreamProxy(new InetSocketAddress("127.0.0.1", 8900)).build();
+
+        assertThat(configs.getUpstreamProxy()).isEqualTo("127.0.0.1:8900");
+    }
 }

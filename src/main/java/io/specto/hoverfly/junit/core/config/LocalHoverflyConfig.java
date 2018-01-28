@@ -25,7 +25,7 @@ public class LocalHoverflyConfig extends HoverflyConfig {
     private String sslCertificatePath;
     private String sslKeyPath;
     private boolean webServer;
-    private boolean tlsVerficationDisabled;
+    private boolean tlsVerificationDisabled;
     private boolean plainHttpTunneling;
     private LocalMiddleware localMiddleware;
 
@@ -69,7 +69,7 @@ public class LocalHoverflyConfig extends HoverflyConfig {
     }
 
     public LocalHoverflyConfig disableTlsVerification() {
-        this.tlsVerficationDisabled = true;
+        this.tlsVerificationDisabled = true;
         return this;
     }
 
@@ -86,9 +86,9 @@ public class LocalHoverflyConfig extends HoverflyConfig {
     @Override
     public HoverflyConfiguration build() {
         HoverflyConfiguration configs = new HoverflyConfiguration(proxyPort, adminPort, proxyLocalHost, destination,
-                proxyCaCert, sslCertificatePath, sslKeyPath, captureHeaders);
+                proxyCaCert, sslCertificatePath, sslKeyPath, captureHeaders, upstreamProxy);
         configs.setWebServer(this.webServer);
-        configs.setTlsVerificationDisabled(this.tlsVerficationDisabled);
+        configs.setTlsVerificationDisabled(this.tlsVerificationDisabled);
         configs.setPlainHttpTunneling(this.plainHttpTunneling);
         configs.setLocalMiddleware(this.localMiddleware);
         HoverflyConfigValidator validator = new HoverflyConfigValidator();
