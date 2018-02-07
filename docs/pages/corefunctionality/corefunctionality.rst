@@ -9,14 +9,12 @@ This section describes the core functionality of Hoverfly Java.
     :maxdepth: 3
 
     simulating
+    spying
     capturing
     sources
     dsl
     matchers
-    conversion
-    verification
     templating
+    verification
     configuration
-    ssl
-    remotehoverfly
     client

@@ -1,7 +1,7 @@
 .. _sources:
 
-Sources
-=======
+Simulation source
+=================
 
 There are a few different potential sources for Simulations:
 
