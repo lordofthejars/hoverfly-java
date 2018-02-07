@@ -3,7 +3,9 @@
 Spying
 ======
 
-In Spy mode, Hoverfly calls the real service if a request is not matched, otherwise, it will return the response from simulation.
+In Spy mode, Hoverfly calls the real service if a request is not matched, otherwise, it simulates.
+
+This mode allows you to spy on some of the endpoints of the services your test depends on, while letting other traffic to pass through.
 
 .. code-block:: java
 

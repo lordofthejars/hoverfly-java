@@ -30,6 +30,7 @@ import java.util.List;
 import static io.specto.hoverfly.junit.core.HoverflyConfig.configs;
 import static io.specto.hoverfly.junit.core.HoverflyMode.CAPTURE;
 import static io.specto.hoverfly.junit.core.HoverflyMode.SIMULATE;
+import static io.specto.hoverfly.junit.core.HoverflyMode.SPY;
 import static io.specto.hoverfly.junit.core.SimulationSource.classpath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,6 +65,17 @@ public class HoverflyTest {
 
         // Then
         verify(tempFileManager).purge();
+    }
+
+    @Test
+    public void shouldBeAbleToSetMode() {
+
+        hoverfly = new Hoverfly(SIMULATE);
+        hoverfly.start();
+
+        hoverfly.setMode(SPY);
+
+        assertThat(hoverfly.getMode()).isEqualTo(SPY);
     }
 
     @Test

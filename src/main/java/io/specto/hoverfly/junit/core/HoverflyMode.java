@@ -20,7 +20,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum HoverflyMode {
     SIMULATE("simulate"),
     CAPTURE("capture"),
-    SPY("spy");
+    SPY("spy"),
+    SYNTHESIZE("synthesize"),
+    MODIFY("modify");
+
 
     String value;
 
