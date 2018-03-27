@@ -108,6 +108,48 @@ public class StubServiceBuilder {
         return createRequestMatcherBuilder(PATCH, path);
     }
 
+    /**
+     * Creating a OPTIONS request matcher
+     *
+     * @param path the path you want the matcher to have
+     * @return the {@link RequestMatcherBuilder} for further customizations
+     */
+    public RequestMatcherBuilder options(final String path) {
+        return options(equalsTo(path));
+    }
+
+    public RequestMatcherBuilder options(PlainTextFieldMatcher path) {
+        return createRequestMatcherBuilder(OPTIONS, path);
+    }
+
+    /**
+     * Creating a HEAD request matcher
+     *
+     * @param path the path you want the matcher to have
+     * @return the {@link RequestMatcherBuilder} for further customizations
+     */
+    public RequestMatcherBuilder head(final String path) {
+        return head(equalsTo(path));
+    }
+
+    public RequestMatcherBuilder head(PlainTextFieldMatcher path) {
+        return createRequestMatcherBuilder(HEAD, path);
+    }
+
+    /**
+     * Creating a CONNECT request matcher
+     *
+     * @param path the path you want the matcher to have
+     * @return the {@link RequestMatcherBuilder} for further customizations
+     */
+    public RequestMatcherBuilder connect(final String path) {
+        return connect(equalsTo(path));
+    }
+
+    public RequestMatcherBuilder connect(PlainTextFieldMatcher path) {
+        return createRequestMatcherBuilder(CONNECT, path);
+    }
+
     public RequestMatcherBuilder anyMethod(String path) {
         return anyMethod(equalsTo(path));
     }
