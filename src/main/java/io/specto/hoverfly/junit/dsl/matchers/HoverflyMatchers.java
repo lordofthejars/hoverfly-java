@@ -5,7 +5,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.specto.hoverfly.junit.core.model.FieldMatcher;
 import io.specto.hoverfly.junit.dsl.HoverflyDslException;
 import io.specto.hoverfly.junit.dsl.HttpBodyConverter;
-import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 
 import java.io.IOException;
 

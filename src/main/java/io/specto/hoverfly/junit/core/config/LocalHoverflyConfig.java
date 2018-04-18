@@ -65,6 +65,10 @@ public class LocalHoverflyConfig extends HoverflyConfig {
         return this;
     }
 
+    /**
+     * Configure Hoverfly to skip TLS verification. This option allows Hoverfly to perform “insecure” SSL connections to target server that uses invalid certificate (eg. self-signed certificate)
+     * @return the {@link LocalHoverflyConfig} for further customizations
+     */
     public LocalHoverflyConfig disableTlsVerification() {
         this.tlsVerificationDisabled = true;
         return this;
@@ -87,6 +91,11 @@ public class LocalHoverflyConfig extends HoverflyConfig {
      */
     public LocalHoverflyConfig upstreamProxy(InetSocketAddress proxyAddress) {
         this.upstreamProxy = proxyAddress.getHostString() + ":" + proxyAddress.getPort();
+        return this;
+    }
+
+    public LocalHoverflyConfig upstreamProxy(String upstreamProxy) {
+        this.upstreamProxy = upstreamProxy;
         return this;
     }
 

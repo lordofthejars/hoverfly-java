@@ -2,6 +2,7 @@ package io.specto.hoverfly.junit5.api;
 
 
 import io.specto.hoverfly.junit.core.config.LocalHoverflyConfig;
+import io.specto.hoverfly.junit.core.config.LocalMiddleware;
 import io.specto.hoverfly.junit.core.config.RemoteHoverflyConfig;
 
 import java.lang.annotation.ElementType;
@@ -58,5 +59,26 @@ public @interface HoverflyConfig {
      * External Hoverfly instance hostname {@link RemoteHoverflyConfig#host(String)}
      */
     String remoteHost() default "";
+
+
+    /**
+     * Enable this flag allows Hoverfly to handle CONNECT requests for non-TLS tunnelling, making it possible to work with Netty-based HTTP client such as reactor-netty
+     */
+    boolean plainHttpTunneling() default false;
+
+    /**
+     * Configure Hoverfly to skip TLS verification. This option allows Hoverfly to perform “insecure” SSL connections to target server that uses invalid certificate (eg. self-signed certificate)
+     */
+    boolean disableTlsVerification() default false;
+
+    /**
+     * Set upstream proxy for hoverfly to connect to target host
+     */
+    String upstreamProxy() default "";
+
+    /**
+     * Enable web server mode
+     */
+    boolean webServer() default false;
 
 }

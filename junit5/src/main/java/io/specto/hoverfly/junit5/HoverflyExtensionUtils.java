@@ -2,8 +2,11 @@ package io.specto.hoverfly.junit5;
 
 import io.specto.hoverfly.junit.core.HoverflyConstants;
 import io.specto.hoverfly.junit.core.SimulationSource;
+import io.specto.hoverfly.junit.core.config.LocalHoverflyConfig;
 import io.specto.hoverfly.junit5.api.HoverflyConfig;
 import io.specto.hoverfly.junit5.api.HoverflySimulate;
+
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -24,8 +27,15 @@ class HoverflyExtensionUtils {
                 configs = remoteConfigs().host(config.remoteHost());
             } else {
                 configs = localConfigs()
-                    .sslCertificatePath(config.sslCertificatePath())
-                    .sslKeyPath(config.sslKeyPath());
+                        .sslCertificatePath(config.sslCertificatePath())
+                        .sslKeyPath(config.sslKeyPath())
+                        .upstreamProxy(config.upstreamProxy());
+                if (config.plainHttpTunneling()) {
+                    ((LocalHoverflyConfig) configs).plainHttpTunneling();
+                }
+                if (config.disableTlsVerification()){
+                    ((LocalHoverflyConfig) configs).disableTlsVerification();
+                }
             }
             fillHoverflyConfig(configs, config);
             return configs;
@@ -78,6 +88,9 @@ class HoverflyExtensionUtils {
         }
         if (configParams.captureAllHeaders()) {
             configs.captureAllHeaders();
+        }
+        if (configParams.webServer()) {
+            configs.asWebServer();
         }
     }
 }
