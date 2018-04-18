@@ -12,6 +12,9 @@ import org.junit.jupiter.api.extension.*;
 import java.lang.reflect.AnnotatedElement;
 import java.nio.file.Path;
 
+import static io.specto.hoverfly.junit.core.HoverflyMode.DIFF;
+import static io.specto.hoverfly.junit.core.HoverflyMode.SIMULATE;
+import static io.specto.hoverfly.junit.core.HoverflyMode.SPY;
 import static io.specto.hoverfly.junit5.HoverflyExtensionUtils.*;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
@@ -40,7 +43,7 @@ public class HoverflyExtension implements BeforeEachCallback, AfterAllCallback, 
 
     private Hoverfly hoverfly;
     private SimulationSource source = SimulationSource.empty();
-    private HoverflyMode mode = HoverflyMode.SIMULATE;
+    private HoverflyMode mode = SIMULATE;
     private Path capturePath;
 
     @Override
@@ -49,7 +52,7 @@ public class HoverflyExtension implements BeforeEachCallback, AfterAllCallback, 
             hoverfly.resetJournal();
             // Reset to per-class global configuration
             hoverfly.resetMode(mode);
-            if (mode == HoverflyMode.SIMULATE || mode == HoverflyMode.DIFF) {
+            if (mode.allowSimulationImport()) {
                 hoverfly.simulate(source);
             }
         }
@@ -107,7 +110,7 @@ public class HoverflyExtension implements BeforeEachCallback, AfterAllCallback, 
             hoverfly.start();
         }
 
-        if (mode == HoverflyMode.SIMULATE || mode == HoverflyMode.DIFF) {
+        if (mode.allowSimulationImport()) {
             hoverfly.simulate(source);
         }
     }

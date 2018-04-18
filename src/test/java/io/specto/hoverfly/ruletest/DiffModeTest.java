@@ -23,7 +23,7 @@ import static io.specto.hoverfly.junit.dsl.HoverflyDsl.service;
 import static io.specto.hoverfly.junit.dsl.ResponseCreators.success;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HoverflyRuleDiffModeTest {
+public class DiffModeTest {
 
     private static final int ADMIN_PROXY_PORT = 54321;
 

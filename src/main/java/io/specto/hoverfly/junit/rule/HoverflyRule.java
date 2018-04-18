@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import io.specto.hoverfly.junit.core.Hoverfly;
 import io.specto.hoverfly.junit.core.HoverflyConfig;
@@ -37,9 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.specto.hoverfly.junit.core.HoverflyConfig.localConfigs;
-import static io.specto.hoverfly.junit.core.HoverflyMode.CAPTURE;
-import static io.specto.hoverfly.junit.core.HoverflyMode.DIFF;
-import static io.specto.hoverfly.junit.core.HoverflyMode.SIMULATE;
+import static io.specto.hoverfly.junit.core.HoverflyMode.*;
 import static io.specto.hoverfly.junit.core.SimulationSource.empty;
 import static io.specto.hoverfly.junit.core.SimulationSource.file;
 import static io.specto.hoverfly.junit.rule.HoverflyRuleUtils.*;
@@ -103,15 +102,9 @@ public class HoverflyRule extends ExternalResource {
         this.capturePath = capturePath;
     }
 
-    private HoverflyRule(final HoverflyConfig hoverflyConfig) {
-        this.hoverflyMode = CAPTURE;
-        this.hoverfly = new Hoverfly(hoverflyConfig, hoverflyMode);
-    }
-
     /**
      * Instantiates a rule which runs {@link Hoverfly} in capture mode if
      * recorded file is not present, or in simulation mode if record file is present
-     *
      * @param recordFile the path where captured or simulated traffic is taken. Relative to src/test/resources/hoverfly
      * @return the rule
      */
@@ -122,7 +115,6 @@ public class HoverflyRule extends ExternalResource {
     /**
      * Instantiates a rule which runs {@link Hoverfly} in capture mode if
      * recorded file is not present, or in simulation mode if record file is present
-     *
      * @param recordFile     the path where captured or simulated traffic is taken. Relative to src/test/resources/hoverfly
      * @param hoverflyConfig the config
      * @return the rule
@@ -142,12 +134,11 @@ public class HoverflyRule extends ExternalResource {
     }
 
     public static HoverflyRule inCaptureMode(HoverflyConfig hoverflyConfig) {
-        return new HoverflyRule(hoverflyConfig);
+        return new HoverflyRule(null, hoverflyConfig);
     }
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in capture mode
-     *
      * @param outputFilename the path to the recorded name relative to src/test/resources/hoverfly
      * @return the rule
      */
@@ -157,7 +148,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in capture mode
-     *
      * @param outputFilename the path to the recorded name relative to src/test/resources/hoverfly
      * @param hoverflyConfig the config
      * @return the rule
@@ -170,7 +160,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in simulate mode with no data
-     *
      * @return the rule
      */
     public static HoverflyRule inSimulationMode() {
@@ -179,7 +168,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in simulate mode with no data
-     *
      * @param hoverflyConfig the config
      * @return the rule
      */
@@ -189,7 +177,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in simulate mode
-     *
      * @param simulationSource the simulation to import
      * @return the rule
      */
@@ -201,10 +188,39 @@ public class HoverflyRule extends ExternalResource {
         return new HoverflyRule(SIMULATE, simulationSource, hoverflyConfig);
     }
 
+    /**
+     * Instantiates a rule which runs {@link Hoverfly} in spy mode with no data
+     * @return the rule
+     */
+    public static HoverflyRule inSpyMode() {
+        return inSpyMode(localConfigs());
+    }
+
+    /**
+     * Instantiates a rule which runs {@link Hoverfly} in spy mode with no data
+     * @param hoverflyConfig the config
+     * @return the rule
+     */
+    public static HoverflyRule inSpyMode(final HoverflyConfig hoverflyConfig) {
+        return inSpyMode(empty(), hoverflyConfig);
+    }
+
+    /**
+     * Instantiates a rule which runs {@link Hoverfly} in spy mode
+     * @param simulationSource the simulation to import
+     * @return the rule
+     */
+    public static HoverflyRule inSpyMode(final SimulationSource simulationSource) {
+        return inSpyMode(simulationSource, localConfigs());
+    }
+
+    public static HoverflyRule inSpyMode(final SimulationSource simulationSource, final HoverflyConfig hoverflyConfig) {
+        return new HoverflyRule(SPY, simulationSource, hoverflyConfig);
+    }
+
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in diff mode with no data
-     *
      * @return the rule
      */
     public static HoverflyRule inDiffMode() {
@@ -213,7 +229,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in diff mode with no data
-     *
      * @param hoverflyConfig the config
      * @return the rule
      */
@@ -223,7 +238,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in diff mode
-     *
      * @param simulationSource the simulation to import the responses will be compared to
      * @return the rule
      */
@@ -233,7 +247,6 @@ public class HoverflyRule extends ExternalResource {
 
     /**
      * Instantiates a rule which runs {@link Hoverfly} in diff mode
-     *
      * @param simulationSource the simulation to import the responses will be compared to
      * @param hoverflyConfig the config
      * @return the rule
@@ -262,7 +275,7 @@ public class HoverflyRule extends ExternalResource {
     protected void before() {
         hoverfly.start();
 
-        if (hoverflyMode == SIMULATE || hoverflyMode == DIFF) {
+        if (hoverflyMode.allowSimulationImport()) {
             importSimulation();
         }
     }
@@ -309,7 +322,7 @@ public class HoverflyRule extends ExternalResource {
      * @param simulationSource the simulation
      */
     public void simulate(SimulationSource simulationSource) {
-        checkMode(SIMULATE);
+        checkMode(HoverflyMode::allowSimulationImport);
         this.simulationSource = simulationSource;
         importSimulation();
         hoverfly.resetJournal();
@@ -321,7 +334,7 @@ public class HoverflyRule extends ExternalResource {
      * @param recordFile the path where captured or simulated traffic is taken. Relative to src/test/resources/hoverfly
      */
     public void capture(final String recordFile) {
-        checkMode(CAPTURE);
+        checkMode(mode -> mode == CAPTURE);
         if (capturePath != null) {
             hoverfly.exportSimulation(capturePath);
         }
@@ -333,6 +346,7 @@ public class HoverflyRule extends ExternalResource {
      * Get custom Hoverfly header name used by Http client to authenticate with secured Hoverfly proxy
      * @return the custom Hoverfly authorization header name
      */
+    @Deprecated
     public String getAuthHeaderName() {
         return HoverflyConstants.X_HOVERFLY_AUTHORIZATION;
     }
@@ -341,6 +355,7 @@ public class HoverflyRule extends ExternalResource {
      * Get Bearer token used by Http client to authenticate with secured Hoverfly proxy
      * @return a custom Hoverfly authorization header value
      */
+    @Deprecated
     public String getAuthHeaderValue() {
         Optional<String> authToken = hoverfly.getHoverflyConfig().getAuthToken();
         return authToken.map(s -> "Bearer " + s).orElse(null);
@@ -432,9 +447,9 @@ public class HoverflyRule extends ExternalResource {
         hoverfly.assertThatNoDiffIsReported(shouldResetDiff);
     }
 
-    private void checkMode(HoverflyMode mode) {
-        if (hoverflyMode != mode) {
-            throw new HoverflyRuleException("Hoverfly must be in " + mode.name() + " mode for this operation.");
+    private void checkMode(Predicate<HoverflyMode> condition) {
+        if (!condition.test(hoverflyMode)) {
+            throw new HoverflyRuleException(hoverflyMode.name() + " mode does not support this operation.");
         }
     }
 

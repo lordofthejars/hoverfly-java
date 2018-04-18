@@ -47,7 +47,7 @@ public class HoverflyRuleTest {
         Hoverfly mockHoverfly = getHoverflyMock(hoverflyRule);
 
         assertThatThrownBy(() -> hoverflyRule.simulate(empty()))
-                .isInstanceOf(HoverflyRule.HoverflyRuleException.class).hasMessageContaining("Hoverfly must be in SIMULATE mode for this operation.");
+                .isInstanceOf(HoverflyRule.HoverflyRuleException.class).hasMessageContaining("CAPTURE mode does not support this operation.");
 
         verifyZeroInteractions(mockHoverfly);
     }
@@ -59,7 +59,7 @@ public class HoverflyRuleTest {
         Hoverfly mockHoverfly = getHoverflyMock(hoverflyRule);
 
         assertThatThrownBy(() -> hoverflyRule.capture("test.json"))
-                .isInstanceOf(HoverflyRule.HoverflyRuleException.class).hasMessageContaining("Hoverfly must be in CAPTURE mode for this operation.");
+                .isInstanceOf(HoverflyRule.HoverflyRuleException.class).hasMessageContaining("SIMULATE mode does not support this operation.");
 
         verifyZeroInteractions(mockHoverfly);
     }

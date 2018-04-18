@@ -36,4 +36,8 @@ public enum HoverflyMode {
     public String getValue() {
         return value;
     }
+
+    public boolean allowSimulationImport() {
+        return this == SIMULATE || this == SPY || this == DIFF;
+    }
 }

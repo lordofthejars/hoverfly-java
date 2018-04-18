@@ -16,11 +16,9 @@ public class HoverflyRulePortConfigurationTest {
     private static final int EXPECTED_ADMIN_PORT = 8889;
     private static final int EXPECTED_PROXY_PORT = 8890;
 
-    // tag::portConfiguration[]
     @ClassRule
     public static HoverflyRule hoverflyRule = HoverflyRule.inSimulationMode(classpath("test-service.json"),
         localConfigs().proxyPort(EXPECTED_PROXY_PORT).adminPort(EXPECTED_ADMIN_PORT));
-    // end::portConfiguration[]
 
     private RestTemplate restTemplate = new RestTemplate();
 
