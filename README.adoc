@@ -35,7 +35,7 @@ Full documentation is available http://hoverfly-java.readthedocs.io/[here^]
 <dependency>
     <groupId>io.specto</groupId>
     <artifactId>hoverfly-java</artifactId>
-    <version>0.10.0</version>
+    <version>0.10.2</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -100,6 +100,8 @@ hoverflyRule.verifyAll();
 Contributions are welcome!
 
 To submit a pull request you should fork the Hoverfly-Java repository, and make your change on a feature branch of your fork.
+
+As of `v0.10.2`, hoverfly binaries are no longer stored in the repository. You should run `./gradlew clean test` once to cache the binaries for development with your IDE.
 
 == Issues
 

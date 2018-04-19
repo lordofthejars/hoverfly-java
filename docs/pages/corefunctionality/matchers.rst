@@ -8,7 +8,7 @@ Hoverfly-Java abstracts away some of the complexity of building the `request fie
 By default, the DSL request builder assumes exact matching when you pass in a string.
 
 You can also pass in a matcher created by the ``HoverflyMatchers`` factory class. 
-The supported types of matchers are limited to ``exactMatch``, ``globMatch``, and ``regexMatch`` (not yet implemented) for URL, path and query.
+The supported types of matchers are limited to ``exactMatch``, ``globMatch``, and ``regexMatch`` for URL, path and query.
 
 The ``body`` method supports all the above plus JSON/XML equality matching, and JSONPath/XPath matching.
 
@@ -47,6 +47,12 @@ Here are some examples:
 
     HoverflyMatchers.contains("foo")
     HoverflyMatchers.endsWith("foo")
+    HoverflyMatchers.startsWith("foo")
+
+    // Special matchers
+    HoverflyMatchers.matches("*foo*") // matches GLOB pattern
+    HoverflyMatchers.matchesGoRegex("[xyz]") // matches Golang regex pattern
+
 
 
 Fuzzy matching is possible for request method, query and body with these simple built-in DSL methods:

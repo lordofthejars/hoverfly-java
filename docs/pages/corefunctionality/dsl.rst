@@ -31,6 +31,9 @@ The entry point for the DSL is ``HoverflyDSL.service``.  After calling this you 
 You can then use ``willReturn`` to state which response you want when there is a match, which takes ``ResponseBuilder`` object that you can instantiate directly,
 or via the helper class ``ResponseCreators``.
 
+
+Simulate network delay
+----------------------
 You can also simulate fixed network delay using DSL.
 
 Global delays can be set for all requests or for a particular HTTP method:

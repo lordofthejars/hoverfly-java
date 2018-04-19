@@ -160,7 +160,6 @@ task wrapper(type: Wrapper) {
 }
 
 // Tasks for updating Hoverfly binaries
-import de.undercouch.gradle.tasks.download.Download
 import java.util.regex.Pattern
 
 task (updateHoverflyBinaries) {
