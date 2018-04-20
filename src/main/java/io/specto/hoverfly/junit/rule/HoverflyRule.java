@@ -120,7 +120,7 @@ public class HoverflyRule extends ExternalResource {
      * @return the rule
      */
     public static HoverflyRule inCaptureOrSimulationMode(String recordFile, HoverflyConfig hoverflyConfig) {
-        Optional<Path> path = findResourceOnClasspath(recordFile);
+        Optional<Path> path = findResourceOnClasspath("hoverfly/" + recordFile);
         if (path.isPresent() && Files.isRegularFile(path.get())) {
             return inSimulationMode(file(path.get()), hoverflyConfig);
         } else {
