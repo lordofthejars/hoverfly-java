@@ -14,6 +14,7 @@ package io.specto.hoverfly.junit.rule;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -120,9 +121,9 @@ public class HoverflyRule extends ExternalResource {
      * @return the rule
      */
     public static HoverflyRule inCaptureOrSimulationMode(String recordFile, HoverflyConfig hoverflyConfig) {
-        Optional<Path> path = findResourceOnClasspath(recordFile);
-        if (path.isPresent() && Files.isRegularFile(path.get())) {
-            return inSimulationMode(file(path.get()), hoverflyConfig);
+        final Path simulatedPath = fileRelativeToTestResourcesHoverfly(recordFile);
+        if (Files.exists(simulatedPath) && Files.isRegularFile(simulatedPath)) {
+            return inSimulationMode(file(simulatedPath), hoverflyConfig);
         } else {
             return inCaptureMode(recordFile, hoverflyConfig);
         }
