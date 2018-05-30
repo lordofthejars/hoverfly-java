@@ -28,6 +28,7 @@ public class SimulationTest {
     private URL v2Resource = Resources.getResource("simulations/v2-simulation.json");
     private URL v3Resource = Resources.getResource("simulations/v3-simulation.json");
     private URL v4Resource = Resources.getResource("simulations/v4-simulation.json");
+    private URL v4ResourceWithoutGlobalActions = Resources.getResource("simulations/v4-simulation-without-global-actions.json");
     private URL v2ResourceWithUnknownFields = Resources.getResource("simulations/v2-simulation-with-unknown-fields.json");
     private URL v1ResourceWithLooseMatching = Resources.getResource("simulations/v1-simulation-with-loose-matching.json");
     private URL v1ResourceWithRecording = Resources.getResource("simulations/v1-simulation-with-recording.json");
@@ -92,6 +93,17 @@ public class SimulationTest {
 
         // Then
         assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void shouldNotIncludeNullGlobalActionsFieldWhenSerialize() throws Exception{
+        String expected = Resources.toString(v4ResourceWithoutGlobalActions, Charset.forName("UTF-8"));
+
+        Simulation simulation = objectMapper.readValue(expected, Simulation.class);
+
+        String actual = objectMapper.writeValueAsString(simulation);
+
+        JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 
     @Test
