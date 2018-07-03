@@ -71,7 +71,6 @@ If you have recorded data in the legacy schema generated before hoverfly-junit v
 .. code-block:: bash
 
     $ hoverctl start
-    $ hoverctl delete simulations
     $ hoverctl import --v1 path-to-my-json/file.json
     $ hoverctl export path-to-my-json/file.json
     $ hoverctl stop
@@ -80,7 +79,7 @@ Migration to the latest (V5) schema
 -----------------------------------
 
 Starting from Hoverfly-java v0.11.0, the simulation schema is upgraded to v5 which is a big leap in terms of the maturity of header and query matchers,
-and the possibility to introduce more request matchers without any breaking changes in the future. Although it is backward compatible with all the previous schemas, upgrading to v5 is highly recommended:
+and the possibility to introduce more request matchers without any breaking changes in the future. Although Hoverfly is designed to be backward compatible with all the previous schemas, upgrading to v5 is highly recommended:
 
 .. code-block:: bash
 

@@ -12,12 +12,13 @@ You can also set fixed port:
     localConfigs().proxyPort(8080)
 
 
-You can configure Hoverfly to process requests to certain destinations / hostnames
+You can configure Hoverfly to process requests to certain destinations / hostnames.
 
 .. code-block:: java
 
     localConfigs().destination("www.test.com") // only process requests to www.test.com
     localConfigs().destination("api") // matches destination that contains api, eg. api.test.com
+    localConfigs().destination(".+.test.com") // matches destination by regex, eg. dev.test.com or stage.test.com
 
 You can configure Hoverfly to proxy localhost requests. This is useful if the target server you are trying to simulate is running on localhost.
 
