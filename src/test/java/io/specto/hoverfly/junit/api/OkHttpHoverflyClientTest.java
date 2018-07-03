@@ -7,6 +7,8 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -147,9 +149,16 @@ public class OkHttpHoverflyClientTest {
 
     @Test
     public void shouldBeAbleToGetSimulation() {
-        Simulation simulation = hoverfly.getSimulation();
+        Simulation simulation = client.getSimulation();
 
         assertThat(simulation).isEqualTo(Simulation.newEmptyInstance());
+    }
+
+    @Test
+    public void shouldBeAbleToGetSimulationAsJsonNode() throws JsonProcessingException {
+        JsonNode simulation = client.getSimulationJson();
+
+        assertThat(objectMapper.treeToValue(simulation, Simulation.class)).isEqualTo(Simulation.newEmptyInstance());
     }
 
     @Test

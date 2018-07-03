@@ -99,6 +99,21 @@ class OkHttpHoverflyClient implements HoverflyClient {
     }
 
     @Override
+    public JsonNode getSimulationJson() {
+        try {
+            final Request.Builder builder = createRequestBuilderWithUrl(SIMULATION_PATH);
+            final Request request = builder.get().build();
+            try (Response response = client.newCall(request).execute()) {
+                onFailure(response);
+                return OBJECT_MAPPER.readTree(response.body().string());
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get simulation: {}", e.getMessage());
+            throw new HoverflyClientException("Failed to get simulation: " + e.getMessage());
+        }
+    }
+
+    @Override
     public void deleteSimulation() {
         try {
             final Request.Builder builder = createRequestBuilderWithUrl(SIMULATION_PATH);
@@ -323,7 +338,6 @@ class OkHttpHoverflyClient implements HoverflyClient {
             onFailure(response);
             return OBJECT_MAPPER.readValue(response.body().string(), clazz);
         }
-
     }
 
     // Does nothing on success
