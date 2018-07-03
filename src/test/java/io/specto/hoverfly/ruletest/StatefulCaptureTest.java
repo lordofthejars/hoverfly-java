@@ -52,7 +52,7 @@ public class StatefulCaptureTest {
     private String todoApi;
 
     @Before
-    public void removeState(){
+    public void setup(){
         todoApi = "http://localhost:" + hoverflyRuleForSimulation.getProxyPort() + "/items";
     }
 

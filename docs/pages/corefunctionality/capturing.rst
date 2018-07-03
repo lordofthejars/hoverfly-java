@@ -17,3 +17,10 @@ test, then switch back into simulate mode using the simulation data recorded dur
 
         hoverfly.exportSimulation(Paths.get("some-path/simulation.json"));
     }
+
+
+By default Hoverfly captures multiple identical requests once only, but you can set the following config to enable `stateful capture <https://hoverfly.readthedocs.io/en/latest/pages/tutorials/basic/capturingsequences/capturingsequences.html>`_ which should capture all requests sequentially.
+
+.. code-block:: java
+
+    Hoverfly hoverfly = new Hoverfly(localConfigs().enableStatefulCapture(), CAPTURE)

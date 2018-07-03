@@ -136,7 +136,7 @@ public abstract class HoverflyConfig {
 
 
     /**
-     * By default Hoverfly only capture multiple identical requests once, enable to capture all requests sequentially
+     * By default Hoverfly captures multiple identical requests once only, enable to capture all requests sequentially
      * @return the {@link HoverflyConfig} for further customizations
      */
     public HoverflyConfig enableStatefulCapture() {

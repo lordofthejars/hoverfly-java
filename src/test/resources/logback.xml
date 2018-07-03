@@ -13,5 +13,8 @@
     <root level="${LOG_LEVEL}">
         <appender-ref ref="CONSOLE"/>
     </root>
+    <logger name="hoverfly" level="WARN">
+        <appender-ref ref="CONSOLE" />
+    </logger>
 
 </configuration>

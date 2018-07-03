@@ -11,6 +11,7 @@ This section describes the core functionality of Hoverfly Java.
     simulating
     spying
     capturing
+    diffing
     sources
     dsl
     matchers
