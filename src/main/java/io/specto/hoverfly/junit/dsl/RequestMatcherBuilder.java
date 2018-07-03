@@ -84,13 +84,32 @@ public class RequestMatcherBuilder {
     }
 
     /**
-     * Sets one request header
+     * Add a header matcher
      * @param key the header key to match on
-     * @param value the header value to match on
+     * @param values the header values to match on
      * @return the {@link RequestMatcherBuilder} for further customizations
      */
-    public RequestMatcherBuilder header(final String key, final String value) {
-        headers.put(key, singletonList(newExactMatcher(value)));
+    public RequestMatcherBuilder header(final String key, final Object... values) {
+        if (values.length == 0 ) {
+            headers.put(key, singletonList(any()));
+        } else {
+            // TODO until we implement an array matcher, hoverfly currently match on array values that are joined by semicolon
+            headers.put(key, singletonList(newExactMatcher(Arrays.stream(values)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(";")))));
+        }
+        return this;
+    }
+
+
+    /**
+     * Add a header matcher
+     * @param key the header key to match on
+     * @param matcher the matcher for matching header values
+     * @return the {@link RequestMatcherBuilder} for further customizations
+     */
+    public RequestMatcherBuilder header(final String key, final RequestFieldMatcher matcher) {
+        headers.put(key, singletonList(matcher));
         return this;
     }
 
@@ -106,7 +125,7 @@ public class RequestMatcherBuilder {
     }
 
     /**
-     * Sets the request query
+     * Add a query matcher
      * @param key the query params key to match on
      * @param values the query params values to match on
      * @return the {@link RequestMatcherBuilder} for further customizations
@@ -124,12 +143,22 @@ public class RequestMatcherBuilder {
         return this;
     }
 
-    public RequestMatcherBuilder queryParam(final String key, final RequestFieldMatcher value) {
-        query.put(key, singletonList(value));
+    /**
+     * Add a query matcher
+     * @param key the query params key to match on
+     * @param matcher the matcher for matching query parameter values
+     * @return the {@link RequestMatcherBuilder} for further customizations
+     */
+    public RequestMatcherBuilder queryParam(final String key, final RequestFieldMatcher matcher) {
+        query.put(key, singletonList(matcher));
         deprecatedQuery = null;
         return this;
     }
 
+    /**
+     * Add a matcher that matches any query parameters
+     * @return the {@link RequestMatcherBuilder} for further customizations
+     */
     public RequestMatcherBuilder anyQueryParams() {
         query = null;
         deprecatedQuery = null;

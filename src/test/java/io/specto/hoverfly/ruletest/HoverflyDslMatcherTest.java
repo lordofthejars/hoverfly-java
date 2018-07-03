@@ -55,6 +55,7 @@ public class HoverflyDslMatcherTest {
 
                     // Match XML body
                     .put("/api/bookings/1")
+                    .header("Content-Type", contains("application/json"))
                     .body(equalsToJson("{\"flightId\":\"1\",\"class\":\"PREMIUM\"}"))
                     .willReturn(success())
 

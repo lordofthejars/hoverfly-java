@@ -282,6 +282,125 @@ public class StubServiceBuilderTest {
         );
     }
 
+    @Test
+    public void shouldBuildExactHeaderMatcher() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").header("foo", "bar")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsExactly(MapEntry.entry("foo", Collections.singletonList(newExactMatcher("bar"))));
+    }
+
+    @Test
+    public void shouldBuildHeadersMatcherWithFuzzyValue() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").header("foo", matches("b*r"))
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsExactly(MapEntry.entry("foo", Collections.singletonList(newGlobMatcher("b*r"))));
+    }
+
+    @Test
+    public void shouldBuildMultipleHeaderMatchers() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer abc")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newExactMatcher("application/json"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newExactMatcher("Bearer abc")))
+        );
+    }
+
+    @Test
+    public void shouldBuildExactHeaderMatcherForKeyWithMultipleValues() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", "application/json", "text/html")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsExactly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newExactMatcher("application/json;text/html")))
+        );
+    }
+
+    @Test
+    public void shouldBuildHeaderWithMultipleFuzzyMatchers() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", any())
+                .header("Authorization", any())
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newRegexMatcher(".*")))
+        );
+    }
+
+    @Test
+    public void shouldBuildHeadersWithBothExactAndFuzzyMatchers() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", "application/json")
+                .header("Authorization", matches("Bearer *"))
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newExactMatcher("application/json"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newGlobMatcher("Bearer *")))
+        );
+    }
+
+    @Test
+    public void shouldBuildHeaderMatcherThatIgnoresValue() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type")
+                .header("Authorization")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newRegexMatcher(".*")))
+        );
+    }
+
+    @Test
+    public void shouldBuildAnyHeaderWhenHeaderIsNotSet() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).isEmpty();
+    }
+
 
     @Test
     public void shouldBuildAnyBodyMatcher() {
@@ -440,7 +559,7 @@ public class StubServiceBuilderTest {
         private final String firstField;
         private final String secondField;
 
-        public SomeJson(final String firstField, final String secondField) {
+        SomeJson(final String firstField, final String secondField) {
             this.firstField = firstField;
             this.secondField = secondField;
         }

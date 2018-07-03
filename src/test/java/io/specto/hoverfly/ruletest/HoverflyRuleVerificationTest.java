@@ -73,7 +73,7 @@ public class HoverflyRuleVerificationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        hoverflyRule.verify(service(matches("*.flight.*")).get("/api/bookings").header("Authorization", "Bearer some-token"), never());
+        hoverflyRule.verify(service(matches("*.flight.*")).get("/api/bookings").header("Authorization", matches("Bearer *")), never());
     }
 
 
@@ -83,7 +83,7 @@ public class HoverflyRuleVerificationTest {
 
         assertThat(bookFlightResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        hoverflyRule.verify(service("http://api-sandbox.flight.com").put("/api/bookings/1").body(json(booking)));
+        hoverflyRule.verify(service("http://api-sandbox.flight.com").put("/api/bookings/1").header("Content-Type", any()).body(json(booking)));
     }
 
     @Test

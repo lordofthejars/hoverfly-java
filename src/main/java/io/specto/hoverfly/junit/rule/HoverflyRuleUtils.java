@@ -12,7 +12,6 @@
  */
 package io.specto.hoverfly.junit.rule;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -20,11 +19,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Rule;
 import org.junit.runner.Description;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
