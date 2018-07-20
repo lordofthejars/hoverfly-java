@@ -119,6 +119,16 @@ public class HoverflyTest {
     }
 
     @Test
+    public void shouldSetStartedProcessToNullAfterProcessIsDestroyed() {
+        hoverfly = new Hoverfly(localConfigs(), SIMULATE);
+        hoverfly.start();
+        hoverfly.close();
+
+        Object startedProcess = Whitebox.getInternalState(hoverfly, "startedProcess");
+        assertThat(startedProcess).isNull();
+    }
+
+    @Test
     public void shouldBeAbleToSetMode() {
 
         hoverfly = new Hoverfly(SIMULATE);

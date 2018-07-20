@@ -126,6 +126,7 @@ public class Hoverfly implements AutoCloseable {
      */
     public void start() {
 
+        // Register a shutdown hook to invoke Hoverfly cleanup
         shutdownThread = Optional.of(new Thread(this::close));
         Runtime.getRuntime().addShutdownHook(shutdownThread.get());
 
@@ -509,6 +510,7 @@ public class Hoverfly implements AutoCloseable {
 
             // Some platforms terminate process asynchronously, eg. Windows, and cannot guarantee that synchronous file deletion
             // can acquire file lock
+            // This snippet is adding max 5s wait time for the hoverfly process to terminate
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             Future<Integer> future = executorService.submit((Callable<Integer>) process::waitFor);
             try {
@@ -517,12 +519,13 @@ public class Hoverfly implements AutoCloseable {
                 LOGGER.warn("Timeout when waiting for hoverfly process to terminate.");
             }
             executorService.shutdownNow();
+            startedProcess = null;
         }
 
         proxyConfigurer.restoreProxySystemProperties();
-        // TODO: reset default SslContext?
         sslConfigurer.reset();
         tempFileManager.purge();
+
 
         try {
             shutdownThread.ifPresent(Runtime.getRuntime()::removeShutdownHook);
