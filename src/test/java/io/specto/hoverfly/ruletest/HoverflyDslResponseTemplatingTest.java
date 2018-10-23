@@ -1,19 +1,25 @@
 package io.specto.hoverfly.ruletest;
 
+import io.specto.hoverfly.junit.core.model.RequestFieldMatcher;
 import io.specto.hoverfly.junit.rule.HoverflyRule;
+import io.specto.hoverfly.models.SimpleBooking;
 import org.json.JSONObject;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
 
 import static io.specto.hoverfly.junit.core.SimulationSource.dsl;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.newJsonMatcher;
 import static io.specto.hoverfly.junit.dsl.HoverflyDsl.service;
+import static io.specto.hoverfly.junit.dsl.HttpBodyConverter.json;
 import static io.specto.hoverfly.junit.dsl.HttpBodyConverter.jsonWithSingleQuotes;
 import static io.specto.hoverfly.junit.dsl.ResponseCreators.success;
 import static io.specto.hoverfly.junit.dsl.matchers.HoverflyMatchers.any;
@@ -38,6 +44,10 @@ public class HoverflyDslResponseTemplatingTest {
                     .willReturn(success().body(jsonWithSingleQuotes(
                             "{'id':'1', 'destination':'{{ Request.QueryParam.destination }}','time':'2011-09-01T12:30','_links':{'self':{'href':'http://localhost/api/bookings?page={{ Request.QueryParam.page }}'}}}"
                     )))
+                    // Request body for template
+                    .put("/api/bookings/1")
+                    .body(newJsonMatcher(json(new SimpleBooking(1, "London", "Hong Kong", null)).body()))
+                    .willReturn(success().body(jsonWithSingleQuotes("{'id':'1', 'destination':'{{ Request.Body 'jsonpath' '$.destination' }}'}")))
 
     )).printSimulationData();
 
@@ -82,5 +92,25 @@ public class HoverflyDslResponseTemplatingTest {
                 .getJSONObject("self")
                 .getString("href")).isEqualTo("http://localhost/api/bookings?page=2");
 
+    }
+
+    @Test
+    public void shouldBeAbleToGenerateResponseFromRequestBody() {
+        // Given
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://www.my-test.com")
+                .path("/api/bookings/1")
+                .build()
+                .toUri();
+        RequestEntity<SimpleBooking> request = RequestEntity.put(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new SimpleBooking(1, "London", "Hong Kong", null));
+
+        // When
+        final ResponseEntity<SimpleBooking> response = restTemplate.exchange(request, SimpleBooking.class);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        SimpleBooking body = response.getBody();
+        assertThat(body.getDestination()).isEqualTo("Hong Kong");
     }
 }
