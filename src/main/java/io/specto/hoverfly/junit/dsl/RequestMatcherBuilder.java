@@ -35,10 +35,8 @@ public class RequestMatcherBuilder {
     private final List<RequestFieldMatcher> path;
     private final Map<String, List<RequestFieldMatcher>> headers = new HashMap<>();
     private final Map<String, String> requiresState = new HashMap<>();
-    private Map<String, List<RequestFieldMatcher>> query = new HashMap<>();
+    private Map<String, List<RequestFieldMatcher>> query = new HashMap<>(); // default to match on empty query
     private List<RequestFieldMatcher> body = singletonList(newExactMatcher("")); // default to match on empty body
-    // TODO The only way to match on empty query for now is using deprecatedQuery. Default to match on empty query.
-    private List<RequestFieldMatcher> deprecatedQuery = singletonList(newExactMatcher(""));
 
 
     RequestMatcherBuilder(final StubServiceBuilder invoker,
@@ -139,7 +137,6 @@ public class RequestMatcherBuilder {
                     .map(Object::toString)
                     .collect(Collectors.joining(";")))));
         }
-        deprecatedQuery = null;
         return this;
     }
 
@@ -151,7 +148,6 @@ public class RequestMatcherBuilder {
      */
     public RequestMatcherBuilder queryParam(final String key, final RequestFieldMatcher matcher) {
         query.put(key, singletonList(matcher));
-        deprecatedQuery = null;
         return this;
     }
 
@@ -161,7 +157,6 @@ public class RequestMatcherBuilder {
      */
     public RequestMatcherBuilder anyQueryParams() {
         query = null;
-        deprecatedQuery = null;
         return this;
     }
 
@@ -180,7 +175,7 @@ public class RequestMatcherBuilder {
 
     public Request build() {
 
-        return new Request(path, method, destination, scheme, query, deprecatedQuery, body, headers, requiresState);
+        return new Request(path, method, destination, scheme, query, null, body, headers, requiresState);
     }
 
 }
