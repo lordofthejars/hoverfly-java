@@ -124,7 +124,7 @@ public class ResponseBuilder {
     }
 
     /**
-     * Sets delay paramters.
+     * Sets delay parameters.
      * @param delay amount of delay
      * @param delayTimeUnit time unit of delay (e.g. SECONDS)
      * @return the {@link ResponseBuilder for further customizations}
