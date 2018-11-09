@@ -75,19 +75,20 @@ In this example, the file path that will be looked for is ``src/test/resources/h
 
    .. code:: java
 
-    @ExtendWith(HoverflyExtension.class)
-    class SimulationTests {
+        @ExtendWith(HoverflyExtension.class)
+        class SimulationTests {
 
-        @Test
-        void shouldDoSomethingWith(Hoverfly hoverfly) {
-            hoverfly.simulate(dsl(
-                service("www.my-test.com")
-                    .post("/api/bookings").body("{\"flightId\": \"1\"}")
-                    .willReturn(created("http://localhost/api/bookings/1"))));
+            @Test
+            void shouldDoSomethingWith(Hoverfly hoverfly) {
+                hoverfly.simulate(dsl(
+                    service("www.my-test.com")
+                        .post("/api/bookings").body("{\"flightId\": \"1\"}")
+                        .willReturn(created("http://localhost/api/bookings/1"))));
 
-            // ...
+                // ...
+            }
         }
-    }
+
 
     As ``HoverflyExtension`` implements JUnit 5 ``ParameterResolver``, you can serve up the configured Hoverfly object in your tests for further customization.
     You can refer to `JUnit 5 User Guide here <https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection>`_
