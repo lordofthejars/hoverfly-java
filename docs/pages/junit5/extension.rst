@@ -70,6 +70,29 @@ If no source is provided, it will try to locate a file called with fully qualifi
 In this example, the file path that will be looked for is ``src/test/resources/hoverfly/com_x_y_z_SimulationTests.json``
 
 
+.. note::
+   To simulate using DSL, you can inject the Hoverfly object into your test method or constructor, and call the Hoverfly APIs directly.
+
+   .. code:: java
+
+    @ExtendWith(HoverflyExtension.class)
+    class SimulationTests {
+
+        @Test
+        void shouldDoSomethingWith(Hoverfly hoverfly) {
+            hoverfly.simulate(dsl(
+                service("www.my-test.com")
+                    .post("/api/bookings").body("{\"flightId\": \"1\"}")
+                    .willReturn(created("http://localhost/api/bookings/1"))));
+
+            // ...
+        }
+    }
+
+    As ``HoverflyExtension`` implements JUnit 5 ``ParameterResolver``, you can serve up the configured Hoverfly object in your tests for further customization.
+    You can refer to `JUnit 5 User Guide here <https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection>`_
+
+
 Capture
 -------
 
