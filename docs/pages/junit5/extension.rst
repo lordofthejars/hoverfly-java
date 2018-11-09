@@ -71,9 +71,11 @@ In this example, the file path that will be looked for is ``src/test/resources/h
 
 
 .. note::
-   To simulate using DSL, you can inject the Hoverfly object into your test method or constructor, and call the Hoverfly APIs directly.
+    To simulate using DSL, you can inject the Hoverfly object into your test method or constructor, and call the Hoverfly APIs directly.
 
-   .. code:: java
+    As ``HoverflyExtension`` implements JUnit 5 ``ParameterResolver``, you can serve up the configured Hoverfly object in your tests for further customization. You can refer to `JUnit 5 User Guide here <https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection>`_
+
+    .. code:: java
 
         @ExtendWith(HoverflyExtension.class)
         class SimulationTests {
@@ -88,10 +90,6 @@ In this example, the file path that will be looked for is ``src/test/resources/h
                 // ...
             }
         }
-
-
-    As ``HoverflyExtension`` implements JUnit 5 ``ParameterResolver``, you can serve up the configured Hoverfly object in your tests for further customization.
-    You can refer to `JUnit 5 User Guide here <https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection>`_
 
 
 Capture
