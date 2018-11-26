@@ -5,7 +5,12 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.14.0'
     id 'java'
     id 'idea'
-    id 'jacoco'
+}
+
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.2"
 }
 
 group = 'io.specto'
@@ -22,28 +27,28 @@ repositories {
 
 dependencies {
     compile 'junit:junit:4.12'
-    compile 'com.squareup.okhttp3:okhttp:3.10.0'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.5'
-    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.5'
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.5'
-    compile 'org.apache.commons:commons-lang3:3.5'
+    compile 'com.squareup.okhttp3:okhttp:3.12.0'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.7'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.7'
+    compile 'org.apache.commons:commons-lang3:3.8.1'
     compile 'org.zeroturnaround:zt-exec:1.10'
-    compile 'org.slf4j:slf4j-api:1.7.21'
-    compile 'ch.qos.logback:logback-classic:1.1.7'
-    testCompile 'com.sun.jersey:jersey-client:1.19.3'
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    testCompile 'com.sun.jersey:jersey-client:1.19.4'
     testCompile 'com.google.guava:guava:20.0'
-    testCompile 'org.springframework:spring-web:4.3.8.RELEASE'
-    testCompile 'org.apache.httpcomponents:httpclient:4.5.2'
-    testCompile 'org.assertj:assertj-core:3.9.1'
-    testCompile 'net.javacrumbs.json-unit:json-unit:1.17.0'
-    testCompile 'net.javacrumbs.json-unit:json-unit-fluent:1.17.0'
+    testCompile 'org.springframework:spring-web:4.3.20.RELEASE'
+    testCompile 'org.apache.httpcomponents:httpclient:4.5.6'
+    testCompile 'org.assertj:assertj-core:3.11.1'
+    testCompile 'net.javacrumbs.json-unit:json-unit:1.31.1'
+    testCompile 'net.javacrumbs.json-unit:json-unit-fluent:1.31.1'
     testCompile 'org.eclipse.jetty:jetty-server:9.3.11.v20160721'
-    testCompile 'org.skyscreamer:jsonassert:1.4.0'
-    testCompile 'org.mockito:mockito-core:2.7.22'
-    testCompile 'org.powermock:powermock-module-junit4:1.6.6'
-    testCompile 'com.github.stefanbirkner:system-rules:1.16.0'
-    testCompile 'io.projectreactor.ipc:reactor-netty:0.7.2.RELEASE'
-    testCompile 'io.projectreactor:reactor-test:3.1.2.RELEASE'
+    testCompile 'org.skyscreamer:jsonassert:1.5.0'
+    testCompile 'org.mockito:mockito-core:2.23.4'
+    testCompile 'org.powermock:powermock-module-junit4:1.7.4'
+    testCompile 'com.github.stefanbirkner:system-rules:1.19.0'
+    testCompile 'io.projectreactor.ipc:reactor-netty:0.7.12.RELEASE'
+    testCompile 'io.projectreactor:reactor-test:3.2.3.RELEASE'
 }
 
 allprojects { subproj ->
@@ -156,7 +161,7 @@ jacocoTestReport {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.6'
+    gradleVersion = '4.10.2'
 }
 
 // Tasks for updating Hoverfly binaries

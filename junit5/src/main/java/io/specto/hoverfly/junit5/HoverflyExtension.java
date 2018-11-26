@@ -12,9 +12,7 @@ import org.junit.jupiter.api.extension.*;
 import java.lang.reflect.AnnotatedElement;
 import java.nio.file.Path;
 
-import static io.specto.hoverfly.junit.core.HoverflyMode.DIFF;
 import static io.specto.hoverfly.junit.core.HoverflyMode.SIMULATE;
-import static io.specto.hoverfly.junit.core.HoverflyMode.SPY;
 import static io.specto.hoverfly.junit5.HoverflyExtensionUtils.*;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
@@ -23,7 +21,7 @@ import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
  * Hoverfly state between each test and restore global configurations.
  *
  * By default Hoverfly is started in simulate mode and configured with default configuration parameters. The user is responsible of calling
- * {@link Hoverfly#exportSimulation(Path)} or {@link Hoverfly#simulate(SimulationSource)}
+ * {@link Hoverfly#exportSimulation(Path)} or {@link Hoverfly#simulate(SimulationSource, SimulationSource...)}}
  *
  * It implements {@link ParameterResolver} which gives you the flexibility to inject the current {@link Hoverfly} instance into JUnit 5 annotated method,
  * and make use of the Hoverfly API directly.
