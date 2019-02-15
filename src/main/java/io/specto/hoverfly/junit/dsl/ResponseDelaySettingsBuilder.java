@@ -20,8 +20,8 @@ public class ResponseDelaySettingsBuilder extends AbstractDelaySettingsBuilder {
 
     void forRequest(Request request) {
         if (isValid()) {
-            String path = request.getDestination().getMatchPattern() + request.getPath().getMatchPattern();
-            invoker.addDelaySetting(new DelaySettings(toPattern(path), getConvertedDelay(), null));
+            String urlPattern = toPattern(request.getDestination()) + toPattern(request.getPath());
+            invoker.addDelaySetting(new DelaySettings(urlPattern, getConvertedDelay(), null));
         }
     }
 

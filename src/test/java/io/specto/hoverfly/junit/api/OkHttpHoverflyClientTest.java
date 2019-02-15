@@ -1,10 +1,14 @@
 package io.specto.hoverfly.junit.api;
 
 
+import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -15,11 +19,7 @@ import io.specto.hoverfly.junit.api.view.StateView;
 import io.specto.hoverfly.junit.core.Hoverfly;
 import io.specto.hoverfly.junit.core.SimulationSource;
 import io.specto.hoverfly.junit.core.config.HoverflyConfiguration;
-import io.specto.hoverfly.junit.core.model.FieldMatcher;
-import io.specto.hoverfly.junit.core.model.Journal;
-import io.specto.hoverfly.junit.core.model.JournalEntry;
-import io.specto.hoverfly.junit.core.model.Request;
-import io.specto.hoverfly.junit.core.model.Simulation;
+import io.specto.hoverfly.junit.core.model.*;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 
 import static io.specto.hoverfly.junit.core.HoverflyMode.CAPTURE;
 import static io.specto.hoverfly.junit.core.HoverflyMode.SIMULATE;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.newGlobMatcher;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class OkHttpHoverflyClientTest {
@@ -119,43 +120,54 @@ public class OkHttpHoverflyClientTest {
 
     @Test
     public void shouldBeAbleToSetCaptureModeWithArguments() {
-        client.setMode(CAPTURE, new ModeArguments(Lists.newArrayList("Content-Type", "Authorization")));
+        ModeArguments modeArguments = new ModeArguments(Lists.newArrayList("Content-Type", "Authorization"), true);
+        client.setMode(CAPTURE, modeArguments);
 
-        List<String> headersWhitelist = hoverfly.getHoverflyInfo().getModeArguments().getHeadersWhitelist();
+        ModeArguments actual = hoverfly.getHoverflyInfo().getModeArguments();
+        List<String> headersWhitelist = actual.getHeadersWhitelist();
         assertThat(headersWhitelist).hasSize(2);
         assertThat(headersWhitelist).containsOnly("Content-Type", "Authorization");
+
+        assertThat(actual.isStateful()).isTrue();
     }
 
     @Test
     public void shouldBeAbleToSetV1Simulation() throws Exception {
-        URL resource = Resources.getResource("simulations/v1-simulation.json");
-        Simulation simulation = objectMapper.readValue(resource, Simulation.class);
-        client.setSimulation(simulation);
-
-        Simulation exportedSimulation = hoverfly.getSimulation();
-        assertThat(exportedSimulation.getHoverflyData()).isEqualTo(simulation.getHoverflyData());
+        assertSimulationIsSetAndUpgraded("simulations/v1-simulation.json");
     }
 
     @Test
     public void shouldBeAbleToSetV2Simulation() throws Exception {
-        URL resource = Resources.getResource("simulations/v2-simulation.json");
-        Simulation simulation = objectMapper.readValue(resource, Simulation.class);
-        client.setSimulation(simulation);
+        assertSimulationIsSetAndUpgraded("simulations/v2-simulation.json");
+    }
 
-        Simulation exportedSimulation = hoverfly.getSimulation();
-        assertThat(exportedSimulation.getHoverflyData()).isEqualTo(simulation.getHoverflyData());
+    @Test
+    public void shouldBeAbleToSetV3Simulation() throws Exception {
+        assertSimulationIsSetAndUpgraded("simulations/v3-simulation.json");
+    }
+
+    @Test
+    public void shouldBeAbleToSetV4Simulation() throws Exception {
+        assertSimulationIsSetAndUpgraded("simulations/v4-simulation.json");
     }
 
     @Test
     public void shouldBeAbleToGetSimulation() {
-        Simulation simulation = hoverfly.getSimulation();
+        Simulation simulation = client.getSimulation();
 
-        assertThat(simulation).isEqualTo(SimulationSource.empty().getSimulation());
+        assertThat(simulation).isEqualTo(Simulation.newEmptyInstance());
+    }
+
+    @Test
+    public void shouldBeAbleToGetSimulationAsJsonNode() throws JsonProcessingException {
+        JsonNode simulation = client.getSimulationJson();
+
+        assertThat(objectMapper.treeToValue(simulation, Simulation.class)).isEqualTo(Simulation.newEmptyInstance());
     }
 
     @Test
     public void shouldBeAbleToDeleteAllSimulation() throws Exception {
-        URL resource = Resources.getResource("simulations/v2-simulation.json");
+        URL resource = Resources.getResource("simulations/v5-simulation.json");
         Simulation simulation = objectMapper.readValue(resource, Simulation.class);
         client.setSimulation(simulation);
 
@@ -240,7 +252,7 @@ public class OkHttpHoverflyClientTest {
 
 
         Journal journal = client.searchJournal(new Request.Builder()
-                .destination(FieldMatcher.wildCardMatches("hoverfly.*"))
+                .destination(Collections.singletonList(newGlobMatcher("hoverfly.*")))
                 .build());
 
         assertThat(journal.getEntries()).hasSize(1);
@@ -258,5 +270,15 @@ public class OkHttpHoverflyClientTest {
     private void startDefaultHoverfly() {
         hoverfly = new Hoverfly(SIMULATE);
         hoverfly.start();
+    }
+
+    private void assertSimulationIsSetAndUpgraded(String resourcePath) throws IOException {
+        URL resource = Resources.getResource(resourcePath);
+        String simulation = Resources.toString(resource, Charset.defaultCharset());
+        client.setSimulation(simulation);
+
+        Simulation exportedSimulation = hoverfly.getSimulation();
+        assertThat(exportedSimulation.getHoverflyData().getPairs()).hasSize(1);
+        assertThat(exportedSimulation.getHoverflyMetaData().getSchemaVersion()).isEqualTo("v5");
     }
 }

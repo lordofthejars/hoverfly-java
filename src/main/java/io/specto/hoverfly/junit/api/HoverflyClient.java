@@ -1,6 +1,7 @@
 package io.specto.hoverfly.junit.api;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.specto.hoverfly.junit.api.command.SortParams;
 import io.specto.hoverfly.junit.api.model.ModeArguments;
 import io.specto.hoverfly.junit.api.view.DiffView;
@@ -20,7 +21,15 @@ public interface HoverflyClient {
 
     void setSimulation(Simulation simulation);
 
+    void setSimulation(String simulation);
+
     Simulation getSimulation();
+
+    /**
+     * Get the simulation from Hoverfly as {@link JsonNode}
+     * @return simulation data as {@link JsonNode}
+     */
+    JsonNode getSimulationJson();
 
     void deleteSimulation();
 

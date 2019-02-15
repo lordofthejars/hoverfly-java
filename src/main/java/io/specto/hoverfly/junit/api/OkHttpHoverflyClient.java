@@ -3,6 +3,7 @@ package io.specto.hoverfly.junit.api;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.specto.hoverfly.junit.api.command.DestinationCommand;
@@ -73,11 +74,39 @@ class OkHttpHoverflyClient implements HoverflyClient {
     }
 
     @Override
+    public void setSimulation(String simulation) {
+        try {
+            final Request.Builder builder = createRequestBuilderWithUrl(SIMULATION_PATH);
+            final RequestBody body = RequestBody.create(JSON, simulation);
+            final Request request = builder.put(body).build();
+            exchange(request);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to set simulation: {}", e.getMessage());
+            throw new HoverflyClientException("Failed to set simulation: " + e.getMessage());
+        }
+    }
+
+    @Override
     public Simulation getSimulation() {
         try {
             final Request.Builder builder = createRequestBuilderWithUrl(SIMULATION_PATH);
             final Request request = builder.get().build();
             return exchange(request, Simulation.class);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get simulation: {}", e.getMessage());
+            throw new HoverflyClientException("Failed to get simulation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public JsonNode getSimulationJson() {
+        try {
+            final Request.Builder builder = createRequestBuilderWithUrl(SIMULATION_PATH);
+            final Request request = builder.get().build();
+            try (Response response = client.newCall(request).execute()) {
+                onFailure(response);
+                return OBJECT_MAPPER.readTree(response.body().string());
+            }
         } catch (Exception e) {
             LOGGER.warn("Failed to get simulation: {}", e.getMessage());
             throw new HoverflyClientException("Failed to get simulation: " + e.getMessage());
@@ -309,7 +338,6 @@ class OkHttpHoverflyClient implements HoverflyClient {
             onFailure(response);
             return OBJECT_MAPPER.readValue(response.body().string(), clazz);
         }
-
     }
 
     // Does nothing on success

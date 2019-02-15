@@ -3,16 +3,24 @@ package io.specto.hoverfly.junit.dsl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
-import io.specto.hoverfly.junit.core.model.FieldMatcher;
+import io.specto.hoverfly.junit.core.model.Request;
+import io.specto.hoverfly.junit.core.model.RequestFieldMatcher;
 import io.specto.hoverfly.junit.core.model.RequestResponsePair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.assertj.core.data.MapEntry;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static io.specto.hoverfly.assertions.Assertions.assertThat;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.newExactMatcher;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.newGlobMatcher;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.newRegexMatcher;
 import static io.specto.hoverfly.junit.dsl.HoverflyDsl.*;
 import static io.specto.hoverfly.junit.dsl.HttpBodyConverter.json;
 import static io.specto.hoverfly.junit.dsl.ResponseCreators.success;
@@ -30,8 +38,8 @@ public class StubServiceBuilderTest {
 
         assertThat(pairs).hasSize(1);
         RequestResponsePair pair = pairs.iterator().next();
-        assertThat(pair.getRequest().getDestination().getExactMatch()).isEqualTo("www.my-test.com");
-        assertThat(pair.getRequest().getScheme().getExactMatch()).isEqualTo("https");
+        assertThat(pair.getRequest().getDestination()).containsExactly(newExactMatcher("www.my-test.com"));
+        assertThat(pair.getRequest().getScheme()).containsExactly(newExactMatcher("https"));
     }
 
     @Test
@@ -40,7 +48,7 @@ public class StubServiceBuilderTest {
 
         assertThat(pairs).hasSize(1);
         RequestResponsePair pair = pairs.iterator().next();
-        assertThat(pair.getRequest().getDestination().getExactMatch()).isEqualTo("www.my-test.com");
+        assertThat(pair.getRequest().getDestination()).containsExactly(newExactMatcher("www.my-test.com"));
         assertThat(pair.getRequest().getScheme()).isNull();
 
     }
@@ -51,8 +59,8 @@ public class StubServiceBuilderTest {
 
         assertThat(pairs).hasSize(1);
         RequestResponsePair pair = pairs.iterator().next();
-        assertThat(pair.getRequest().getDestination().getExactMatch()).isEqualTo("www.my-test.com");
-        assertThat(pair.getRequest().getScheme().getExactMatch()).isEqualTo("http");
+        assertThat(pair.getRequest().getDestination()).containsExactly(newExactMatcher("www.my-test.com"));
+        assertThat(pair.getRequest().getScheme()).containsExactly(newExactMatcher("http"));
     }
 
 
@@ -95,7 +103,7 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        assertThat(Iterables.getLast(pairs).getRequest().getPath().getGlobMatch()).isEqualTo("/api/*/booking");
+        assertThat(Iterables.getLast(pairs).getRequest().getPath()).containsExactly(newGlobMatcher("/api/*/booking"));
     }
 
     @Test
@@ -106,23 +114,23 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getExactMatch()).isEqualTo("foo=bar");
-        assertThat(query.getGlobMatch()).isNull();
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsExactly(MapEntry.entry("foo", Collections.singletonList(newExactMatcher("bar"))));
     }
 
-    @Test
-    public void shouldBuildQueryMatcherWithFuzzyKey() {
-        // When
-        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").queryParam(any(), "bar")
-                .willReturn(response()).getRequestResponsePairs();
-
-        // Then
-        assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getRegexMatch()).isEqualTo(".*=bar");
-        assertThat(query.getExactMatch()).isNull();
-    }
+    // TODO Not supported
+//    @Test
+//    public void shouldBuildQueryMatcherWithFuzzyKey() {
+//        // When
+//        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").queryParam(any(), "bar")
+//                .willReturn(response()).getRequestResponsePairs();
+//
+//        // Then
+//        assertThat(pairs).hasSize(1);
+//        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+//        assertThat(query.getRegexMatch()).isEqualTo(".*=bar");
+//        assertThat(query).containsExactly(MapEntry.entry("foo", Collections.singletonList(newExactMatcher("bar"))));
+//    }
 
     @Test
     public void shouldBuildQueryMatcherWithFuzzyValue() {
@@ -132,23 +140,24 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getGlobMatch()).isEqualTo("foo=b*r");
-        assertThat(query.getExactMatch()).isNull();
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsExactly(MapEntry.entry("foo", Collections.singletonList(newGlobMatcher("b*r"))));
     }
 
-    @Test
-    public void shouldBuildQueryMatcherWithFuzzyKeyAndValue() {
-        // When
-        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").queryParam(endsWith("token"), any())
-                .willReturn(response()).getRequestResponsePairs();
 
-        // Then
-        assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getRegexMatch()).isEqualTo(".*token$=.*");
-        assertThat(query.getExactMatch()).isNull();
-    }
+    // TODO Not supported
+//    @Test
+//    public void shouldBuildQueryMatcherWithFuzzyKeyAndValue() {
+//        // When
+//        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").queryParam(endsWith("token"), any())
+//                .willReturn(response()).getRequestResponsePairs();
+//
+//        // Then
+//        assertThat(pairs).hasSize(1);
+//        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+//        assertThat(query.getRegexMatch()).isEqualTo(".*token$=.*");
+//        assertThat(query.getExactMatch()).isNull();
+//    }
 
     @Test
     public void shouldBuildExactQueryWithMultipleKeyValuePairs() {
@@ -160,8 +169,11 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getExactMatch()).isEqualTo("page=1&size=10");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsOnly(
+                MapEntry.entry("page", Collections.singletonList(newExactMatcher("1"))),
+                MapEntry.entry("size", Collections.singletonList(newExactMatcher("10")))
+        );
     }
 
     @Test
@@ -173,8 +185,10 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getExactMatch()).isEqualTo("category=food&category=drink");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsExactly(
+                MapEntry.entry("category", Collections.singletonList(newExactMatcher("food;drink")))
+        );
     }
 
     @Test
@@ -187,8 +201,11 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getRegexMatch()).isEqualTo("page=.*&size=.*");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsOnly(
+                MapEntry.entry("page", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("size", Collections.singletonList(newRegexMatcher(".*")))
+        );
     }
 
     @Test
@@ -201,8 +218,11 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getRegexMatch()).isEqualTo("page=.*&category=food");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsOnly(
+                MapEntry.entry("page", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("category", Collections.singletonList(newExactMatcher("food")))
+        );
     }
 
     @Test
@@ -215,8 +235,11 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getRegexMatch()).isEqualTo("page=.*&size=.*");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsOnly(
+                MapEntry.entry("page", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("size", Collections.singletonList(newRegexMatcher(".*")))
+        );
     }
 
     @Test
@@ -228,7 +251,7 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
         assertThat(query).isNull();
     }
 
@@ -240,8 +263,8 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getExactMatch()).isEqualTo("");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).isEmpty();
     }
 
     @Test
@@ -253,8 +276,129 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher query = Iterables.getLast(pairs).getRequest().getQuery();
-        assertThat(query.getExactMatch()).isEqualTo("destination=New York");
+        Map<String, List<RequestFieldMatcher>> query = Iterables.getLast(pairs).getRequest().getQuery();
+        assertThat(query).containsExactly(
+                MapEntry.entry("destination", Collections.singletonList(newExactMatcher("New York")))
+        );
+    }
+
+    @Test
+    public void shouldBuildExactHeaderMatcher() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").header("foo", "bar")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsExactly(MapEntry.entry("foo", Collections.singletonList(newExactMatcher("bar"))));
+    }
+
+    @Test
+    public void shouldBuildHeadersMatcherWithFuzzyValue() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/").header("foo", matches("b*r"))
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsExactly(MapEntry.entry("foo", Collections.singletonList(newGlobMatcher("b*r"))));
+    }
+
+    @Test
+    public void shouldBuildMultipleHeaderMatchers() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer abc")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newExactMatcher("application/json"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newExactMatcher("Bearer abc")))
+        );
+    }
+
+    @Test
+    public void shouldBuildExactHeaderMatcherForKeyWithMultipleValues() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", "application/json", "text/html")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsExactly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newExactMatcher("application/json;text/html")))
+        );
+    }
+
+    @Test
+    public void shouldBuildHeaderWithMultipleFuzzyMatchers() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", any())
+                .header("Authorization", any())
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newRegexMatcher(".*")))
+        );
+    }
+
+    @Test
+    public void shouldBuildHeadersWithBothExactAndFuzzyMatchers() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type", "application/json")
+                .header("Authorization", matches("Bearer *"))
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newExactMatcher("application/json"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newGlobMatcher("Bearer *")))
+        );
+    }
+
+    @Test
+    public void shouldBuildHeaderMatcherThatIgnoresValue() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .header("Content-Type")
+                .header("Authorization")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).containsOnly(
+                MapEntry.entry("Content-Type", Collections.singletonList(newRegexMatcher(".*"))),
+                MapEntry.entry("Authorization", Collections.singletonList(newRegexMatcher(".*")))
+        );
+    }
+
+    @Test
+    public void shouldBuildAnyHeaderWhenHeaderIsNotSet() {
+        // When
+        final Set<RequestResponsePair> pairs = service("www.base-url.com").get("/")
+                .willReturn(response()).getRequestResponsePairs();
+
+        // Then
+        assertThat(pairs).hasSize(1);
+        Map<String, List<RequestFieldMatcher>> headers = Iterables.getLast(pairs).getRequest().getHeaders();
+        assertThat(headers).isEmpty();
     }
 
 
@@ -267,7 +411,7 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher body = Iterables.getLast(pairs).getRequest().getBody();
+        List<RequestFieldMatcher> body = Iterables.getLast(pairs).getRequest().getBody();
         assertThat(body).isNull();
     }
 
@@ -279,8 +423,8 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(pairs).hasSize(1);
-        FieldMatcher body = Iterables.getLast(pairs).getRequest().getBody();
-        assertThat(body.getExactMatch()).isEqualTo("");
+        Request request = Iterables.getLast(pairs).getRequest();
+        assertThat(request).hasBodyContainsOneExactMatcher("");
     }
 
     @Test
@@ -297,7 +441,7 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(requestResponsePair.getRequest())
-                .hasBody("{\"firstField\":\"requestFieldOne\",\"secondField\":\"requestFieldTwo\"}");
+                .hasBodyContainsOneExactMatcher("{\"firstField\":\"requestFieldOne\",\"secondField\":\"requestFieldTwo\"}");
 
         assertThat(requestResponsePair.getResponse())
                 .hasBody("{\"firstField\":\"responseFieldOne\",\"secondField\":\"responseFieldTwo\"}");
@@ -319,7 +463,7 @@ public class StubServiceBuilderTest {
 
         // Then
         assertThat(requestResponsePair.getRequest())
-                .hasBody("{\"firstField\":\"requestFieldOne\",\"secondField\":\"requestFieldTwo\"}");
+                .hasBodyContainsOneExactMatcher("{\"firstField\":\"requestFieldOne\",\"secondField\":\"requestFieldTwo\"}");
 
         verify(objectMapper).writeValueAsString(new SomeJson("requestFieldOne", "requestFieldTwo"));
     }
@@ -400,14 +544,14 @@ public class StubServiceBuilderTest {
         final Set<RequestResponsePair> pairs = builder.willReturn(response()).getRequestResponsePairs();
 
         assertThat(pairs).hasSize(1);
-        assertThat(Iterables.getLast(pairs).getRequest().getMethod().getExactMatch()).isEqualTo(method);
+        assertThat(Iterables.getLast(pairs).getRequest().getMethod()).containsExactly(newExactMatcher(method));
     }
 
     private void assertPathMatcher(RequestMatcherBuilder builder, String globValue) {
         final Set<RequestResponsePair> pairs = builder.willReturn(response()).getRequestResponsePairs();
 
         assertThat(pairs).hasSize(1);
-        assertThat(Iterables.getLast(pairs).getRequest().getPath().getGlobMatch()).isEqualTo(globValue);
+        assertThat(Iterables.getLast(pairs).getRequest().getPath()).containsExactly(newGlobMatcher(globValue));
     }
 
     public static final class SomeJson {
@@ -415,7 +559,7 @@ public class StubServiceBuilderTest {
         private final String firstField;
         private final String secondField;
 
-        public SomeJson(final String firstField, final String secondField) {
+        SomeJson(final String firstField, final String secondField) {
             this.firstField = firstField;
             this.secondField = secondField;
         }

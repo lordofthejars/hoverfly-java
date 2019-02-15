@@ -12,12 +12,13 @@ You can also set fixed port:
     localConfigs().proxyPort(8080)
 
 
-You can configure Hoverfly to process requests to certain destinations / hostnames
+You can configure Hoverfly to process requests to certain destinations / hostnames.
 
 .. code-block:: java
 
     localConfigs().destination("www.test.com") // only process requests to www.test.com
     localConfigs().destination("api") // matches destination that contains api, eg. api.test.com
+    localConfigs().destination(".+.test.com") // matches destination by regex, eg. dev.test.com or stage.test.com
 
 You can configure Hoverfly to proxy localhost requests. This is useful if the target server you are trying to simulate is running on localhost.
 
@@ -50,6 +51,48 @@ If you are developing behind a cooperate proxy, you can configure Hoverfly to us
 .. code-block:: java
 
     localConfigs().upstreamProxy(new InetSocketAddress("127.0.0.1", 8900))
+
+
+Logging
+-------
+Hoverfly logs to SLF4J by default, meaning that you can control log level using standard logging configuration. Here is an example ``logback.xml`` that set
+Hoverfly log level to WARN:
+
+.. code-block:: xml
+
+    <?xml version="1.0" encoding="UTF-8"?>
+
+    <configuration scan="false" debug="false">
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <charset>utf-8</charset>
+                <Pattern>%date{ISO8601} [%-5level] %logger{10} %msg%n</Pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="hoverfly" level="WARN">
+            <appender-ref ref="CONSOLE" />
+        </logger>
+
+    </configuration>
+
+
+You can override the default ``hoverfly`` logger name:
+
+.. code-block:: java
+
+    localConfigs().logger("io.test.hoverfly")
+
+Or change the log output directly to stdout:
+
+.. code-block:: java
+
+    localConfigs().logToStdOut()
+
 
 Middleware
 ----------

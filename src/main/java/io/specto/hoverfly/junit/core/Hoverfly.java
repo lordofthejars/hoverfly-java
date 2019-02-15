@@ -14,6 +14,7 @@ package io.specto.hoverfly.junit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,8 +31,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.specto.hoverfly.junit.api.HoverflyClient;
 import io.specto.hoverfly.junit.api.HoverflyClientException;
@@ -57,6 +61,7 @@ import org.zeroturnaround.exec.StartedProcess;
 import static io.specto.hoverfly.junit.core.HoverflyConfig.localConfigs;
 import static io.specto.hoverfly.junit.core.HoverflyMode.CAPTURE;
 import static io.specto.hoverfly.junit.core.HoverflyUtils.checkPortInUse;
+import static io.specto.hoverfly.junit.core.HoverflyUtils.readSimulationFromString;
 import static io.specto.hoverfly.junit.dsl.matchers.HoverflyMatchers.any;
 import static io.specto.hoverfly.junit.verification.HoverflyVerifications.atLeastOnce;
 import static io.specto.hoverfly.junit.verification.HoverflyVerifications.never;
@@ -83,6 +88,9 @@ public class Hoverfly implements AutoCloseable {
     private final TempFileManager tempFileManager = new TempFileManager();
     private StartedProcess startedProcess;
     private boolean useDefaultSslCert = true;
+
+    // Visible for testing
+    Optional<Thread> shutdownThread = Optional.empty();
 
     /**
      * Instantiates {@link Hoverfly}
@@ -121,7 +129,9 @@ public class Hoverfly implements AutoCloseable {
      */
     public void start() {
 
-        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+        // Register a shutdown hook to invoke Hoverfly cleanup
+        shutdownThread = Optional.of(new Thread(this::close));
+        Runtime.getRuntime().addShutdownHook(shutdownThread.get());
 
         if (startedProcess != null) {
             LOGGER.warn("Local Hoverfly is already running.");
@@ -136,14 +146,10 @@ public class Hoverfly implements AutoCloseable {
 
         waitForHoverflyToBecomeHealthy();
 
+        setModeWithArguments(hoverflyMode, hoverflyConfig);
+
         if (StringUtils.isNotBlank(hoverflyConfig.getDestination())) {
             setDestination(hoverflyConfig.getDestination());
-        }
-
-        if (hoverflyMode == CAPTURE) {
-            hoverflyClient.setMode(hoverflyMode, new ModeArguments(hoverflyConfig.getCaptureHeaders()));
-        } else {
-            hoverflyClient.setMode(hoverflyMode);
         }
 
         if (hoverflyConfig.getProxyCaCertificate().isPresent()) {
@@ -193,9 +199,14 @@ public class Hoverfly implements AutoCloseable {
         }
 
         if (hoverflyConfig.isTlsVerificationDisabled()) {
-            commands.add("-tls-verification");
-            commands.add("false");
+            commands.add("-tls-verification=false");
         }
+
+        if (hoverflyConfig.getHoverflyLogger().isPresent()) {
+            commands.add("-logs");
+            commands.add("json");
+        }
+
 
         if (hoverflyConfig.isMiddlewareEnabled()) {
             final String path = hoverflyConfig.getLocalMiddleware().getPath();
@@ -213,7 +224,7 @@ public class Hoverfly implements AutoCloseable {
         try {
             startedProcess = new ProcessExecutor()
                     .command(commands)
-                    .redirectOutput(System.out)
+                    .redirectOutput(hoverflyConfig.getHoverflyLogger().<OutputStream>map(LoggingOutputStream::new).orElse(System.out))
                     .directory(tempFileManager.getTempDirectory().toFile())
                     .start();
         } catch (IOException e) {
@@ -240,12 +251,25 @@ public class Hoverfly implements AutoCloseable {
         simulate(simulationSource);
     }
 
-    public void simulate(SimulationSource simulationSource) {
+
+    public void simulate(SimulationSource simulationSource, SimulationSource... sources) {
         LOGGER.info("Importing simulation data to Hoverfly");
 
-        final Simulation simulation = simulationSource.getSimulation();
+        if (sources.length > 0) {
+            final Simulation simulation = readSimulationFromString(simulationSource.getSimulation());
 
-        hoverflyClient.setSimulation(simulation);
+            Stream.of(sources).map(SimulationSource::getSimulation)
+                    .map(HoverflyUtils::readSimulationFromString)
+                    .forEach(s -> {
+                        simulation.getHoverflyData().getPairs().addAll(s.getHoverflyData().getPairs());
+                        simulation.getHoverflyData().getGlobalActions().getDelays().addAll(s.getHoverflyData().getGlobalActions().getDelays());
+                    });
+
+            hoverflyClient.setSimulation(simulation);
+        } else {
+            final String simulation = simulationSource.getSimulation();
+            hoverflyClient.setSimulation(simulation);
+        }
     }
 
     /**
@@ -253,6 +277,8 @@ public class Hoverfly implements AutoCloseable {
      */
     public void reset() {
         hoverflyClient.deleteSimulation();
+
+        // TODO should reset state and diff
         resetJournal();
     }
 
@@ -322,7 +348,7 @@ public class Hoverfly implements AutoCloseable {
             LOGGER.warn("Older version of Hoverfly may not have a update state API", e);
         }
     }
-  
+
     /**
      * Deletes all diffs from Hoverfly
      */
@@ -394,7 +420,7 @@ public class Hoverfly implements AutoCloseable {
      * @param mode Hoverfly mode to reset
      */
     public void resetMode(HoverflyMode mode) {
-        hoverflyClient.setMode(mode, new ModeArguments(hoverflyConfig.getCaptureHeaders()));
+        setModeWithArguments(mode, hoverflyConfig);
     }
 
     /**
@@ -485,6 +511,14 @@ public class Hoverfly implements AutoCloseable {
         throw new IllegalStateException("Hoverfly has not become healthy in " + BOOT_TIMEOUT_SECONDS + " seconds");
     }
 
+    private void setModeWithArguments(HoverflyMode mode, HoverflyConfiguration config) {
+        if (mode == CAPTURE) {
+            hoverflyClient.setMode(mode, new ModeArguments(config.getCaptureHeaders(), config.isStatefulCapture()));
+        } else {
+            hoverflyClient.setMode(mode);
+        }
+    }
+
     private void cleanUp() {
         LOGGER.info("Destroying hoverfly process");
 
@@ -494,6 +528,7 @@ public class Hoverfly implements AutoCloseable {
 
             // Some platforms terminate process asynchronously, eg. Windows, and cannot guarantee that synchronous file deletion
             // can acquire file lock
+            // This snippet is adding max 5s wait time for the hoverfly process to terminate
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             Future<Integer> future = executorService.submit((Callable<Integer>) process::waitFor);
             try {
@@ -502,11 +537,18 @@ public class Hoverfly implements AutoCloseable {
                 LOGGER.warn("Timeout when waiting for hoverfly process to terminate.");
             }
             executorService.shutdownNow();
+            startedProcess = null;
         }
 
         proxyConfigurer.restoreProxySystemProperties();
-        // TODO: reset default SslContext?
         sslConfigurer.reset();
         tempFileManager.purge();
+
+
+        try {
+            shutdownThread.ifPresent(Runtime.getRuntime()::removeShutdownHook);
+        } catch (IllegalStateException e) {
+            // Ignoring this exception as it only means that the JVM is already shutting down
+        }
     }
 }

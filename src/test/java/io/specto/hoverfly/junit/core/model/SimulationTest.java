@@ -14,9 +14,9 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Collections;
-import java.util.Set;
 
-import static io.specto.hoverfly.junit.core.model.FieldMatcher.exactlyMatches;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.*;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SimulationTest {
@@ -25,39 +25,30 @@ public class SimulationTest {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private URL v1Resource = Resources.getResource("simulations/v1-simulation.json");
+    private URL v1ResourceWithLooseMatching = Resources.getResource("simulations/v1-simulation-with-loose-matching.json");
+    private URL v1ResourceWithRecording = Resources.getResource("simulations/v1-simulation-with-recording.json");
     private URL v2Resource = Resources.getResource("simulations/v2-simulation.json");
     private URL v3Resource = Resources.getResource("simulations/v3-simulation.json");
     private URL v4Resource = Resources.getResource("simulations/v4-simulation.json");
-    private URL v2ResourceWithUnknownFields = Resources.getResource("simulations/v2-simulation-with-unknown-fields.json");
-    private URL v1ResourceWithLooseMatching = Resources.getResource("simulations/v1-simulation-with-loose-matching.json");
-    private URL v1ResourceWithRecording = Resources.getResource("simulations/v1-simulation-with-recording.json");
+    private URL v5Resource = Resources.getResource("simulations/v5-simulation.json");
+    private URL v5ResourceWithoutGlobalActions = Resources.getResource("simulations/v5-simulation-without-global-actions.json");
+    private URL v5ResourceWithUnknownFields = Resources.getResource("simulations/v5-simulation-with-unknown-fields.json");
+
 
     @Test
-    public void shouldDeserializeAndUpgradeV1SimulationToV2() throws Exception {
+    public void shouldDeserialize() throws Exception {
         // Given
-        Simulation expected = getV2Simulation();
+        Simulation expected = getLatestSimulation();
 
         // When
-        Simulation actual = objectMapper.readValue(v1Resource, Simulation.class);
+        Simulation actual = objectMapper.readValue(v5Resource, Simulation.class);
 
         // Then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void shouldDeserializeV2Simulation() throws Exception {
-        // Given
-        Simulation expected = getV2Simulation();
-
-        // When
-        Simulation actual = objectMapper.readValue(v2Resource, Simulation.class);
-
-        // Then
-        assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    public void shouldSerializeV4Simulation() throws Exception {
+    public void shouldSerialize() throws Exception {
         // given
         Simulation simulation = getLatestSimulation();
 
@@ -65,94 +56,56 @@ public class SimulationTest {
         String actual = objectMapper.writeValueAsString(simulation);
 
         // then
-        String expected = Resources.toString(v4Resource, Charset.forName("UTF-8"));
-        JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
-    }
-
-    @Test
-    public void shouldSerializeV3Simulation() throws Exception {
-        // given
-        Simulation simulation = getV3Simulation();
-
-        // when
-        String actual = objectMapper.writeValueAsString(simulation);
-
-        // then
-        String expected = Resources.toString(v3Resource, Charset.forName("UTF-8"));
+        String expected = Resources.toString(v5Resource, Charset.forName("UTF-8"));
         JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 
     @Test
     public void shouldIgnoreUnknownPropertiesWhenDeserialize() throws Exception {
         // Given
-        Simulation expected = getV2Simulation();
+        Simulation expected = getLatestSimulation();
 
         // When
-        Simulation actual = objectMapper.readValue(v2ResourceWithUnknownFields, Simulation.class);
+        Simulation actual = objectMapper.readValue(v5ResourceWithUnknownFields, Simulation.class);
 
         // Then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void shouldBeAbleToConvertV1LooseMatchingToGlobMatcher() throws Exception {
+    public void shouldNotIncludeNullGlobalActionsFieldWhenSerialize() throws Exception{
+        String expected = Resources.toString(v5ResourceWithoutGlobalActions, Charset.forName("UTF-8"));
 
-        Simulation actual = objectMapper.readValue(v1ResourceWithLooseMatching, Simulation.class);
+        Simulation simulation = objectMapper.readValue(expected, Simulation.class);
 
-        Set<RequestResponsePair> pairs = actual.getHoverflyData().getPairs();
+        String actual = objectMapper.writeValueAsString(simulation);
 
-        assertThat(pairs).hasSize(1);
-
-        FieldMatcher path = pairs.iterator().next().getRequest().getPath();
-        assertThat(path.getExactMatch()).isNull();
-        assertThat(path.getGlobMatch()).isEqualTo("/api/bookings/*");
+        JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 
-    @Test
-    public void shouldIgnoreHeadersWhenV1SimulationRequestTypeIsRecording() throws Exception {
-        Simulation actual = objectMapper.readValue(v1ResourceWithRecording, Simulation.class);
-
-        Set<RequestResponsePair> pairs = actual.getHoverflyData().getPairs();
-
-        assertThat(pairs).hasSize(1);
-        Request request = pairs.iterator().next().getRequest();
-        assertThat(request.getRequestType()).isEqualTo(Request.RequestType.RECORDING);
-        assertThat(request.getHeaders()).isEmpty();
-
-    }
 
     private Simulation getLatestSimulation() {
         Request.Builder requestBuilder = getTestRequestBuilder()
-            .requiresState(ImmutableMap.of("requiresStateKey", "requiresStateValue"));
+                .deprecatedQuery(singletonList(newExactMatcher("")))
+                .requiresState(ImmutableMap.of("requiresStateKey", "requiresStateValue"));
         Response.Builder responseBuilder = getTestResponseBuilder()
-            .transitionsState(ImmutableMap.of("transitionsStateKey", "transitionsStateValue"))
-            .removesState(ImmutableList.of("removesStateKey"));
+                .transitionsState(ImmutableMap.of("transitionsStateKey", "transitionsStateValue"))
+                .removesState(ImmutableList.of("removesStateKey"));
         HoverflyData data = getTestHoverflyData(requestBuilder, responseBuilder);
         HoverflyMetaData meta = new HoverflyMetaData();
         return new Simulation(data, meta);
     }
 
-    private Simulation getV3Simulation() {
-        HoverflyData data = getTestHoverflyData(getTestRequestBuilder(), getTestResponseBuilder());
-        HoverflyMetaData meta = new HoverflyMetaData("v3");
-        return new Simulation(data, meta);
-    }
-
-    private Simulation getV2Simulation() {
-        HoverflyData data = getTestHoverflyData(getTestRequestBuilder(), getTestResponseBuilder());
-        HoverflyMetaData meta = new HoverflyMetaData("v2");
-        return new Simulation(data, meta);
-    }
 
     private Request.Builder getTestRequestBuilder() {
         return new Request.Builder()
-            .path(exactlyMatches("/api/bookings/1"))
-            .method(exactlyMatches("GET"))
-            .destination(exactlyMatches("www.my-test.com"))
-            .scheme(exactlyMatches("http"))
-            .body(exactlyMatches(""))
-            .query(exactlyMatches(""))
-            .headers(ImmutableMap.of("Content-Type", Lists.newArrayList("text/plain; charset=utf-8")));
+            .path(singletonList(newExactMatcher("/api/bookings/1")))
+            .method(singletonList(newExactMatcher("GET")))
+            .destination(singletonList(newExactMatcher("www.my-test.com")))
+            .scheme(singletonList(newExactMatcher("http")))
+            .body(singletonList(newExactMatcher("")))
+            .query(ImmutableMap.of("key",  singletonList(newExactMatcher("value"))))
+            .headers(ImmutableMap.of("Content-Type", singletonList(newExactMatcher("text/plain; charset=utf-8"))));
     }
 
     private Response.Builder getTestResponseBuilder() {

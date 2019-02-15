@@ -13,14 +13,14 @@
 package io.specto.hoverfly.junit.dsl;
 
 import io.specto.hoverfly.junit.core.model.*;
-import io.specto.hoverfly.junit.dsl.matchers.PlainTextFieldMatcher;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static io.specto.hoverfly.junit.core.model.FieldMatcher.exactlyMatches;
+import static io.specto.hoverfly.junit.core.model.RequestFieldMatcher.*;
 import static io.specto.hoverfly.junit.dsl.StubServiceBuilder.HttpMethod.*;
 import static io.specto.hoverfly.junit.dsl.matchers.HoverflyMatchers.equalsTo;
+import static java.util.Collections.singletonList;
 
 
 /**
@@ -28,12 +28,12 @@ import static io.specto.hoverfly.junit.dsl.matchers.HoverflyMatchers.equalsTo;
  */
 public class StubServiceBuilder {
 
-    private final Set<RequestResponsePair> requestResponsePairs = new HashSet<>();
+    private final Set<RequestResponsePair> requestResponsePairs = new LinkedHashSet<>();
     private final List<DelaySettings> delaySettings = new ArrayList<>();
 
     private static final String SEPARATOR = "://";
-    protected final FieldMatcher destination;
-    protected FieldMatcher scheme;
+    protected final List<RequestFieldMatcher> destination;
+    protected List<RequestFieldMatcher> scheme;
 
 
     /**
@@ -47,7 +47,7 @@ public class StubServiceBuilder {
     }
 
 
-    public RequestMatcherBuilder get(final PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder get(final RequestFieldMatcher path) {
         return createRequestMatcherBuilder(GET, path);
     }
 
@@ -61,7 +61,7 @@ public class StubServiceBuilder {
         return delete(equalsTo(path));
     }
 
-    public RequestMatcherBuilder delete(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder delete(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(DELETE, path);
     }
 
@@ -76,7 +76,7 @@ public class StubServiceBuilder {
     }
 
 
-    public RequestMatcherBuilder put(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder put(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(PUT, path);
     }
 
@@ -90,7 +90,7 @@ public class StubServiceBuilder {
         return post(equalsTo(path));
     }
 
-    public RequestMatcherBuilder post(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder post(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(POST, path);
     }
 
@@ -104,7 +104,7 @@ public class StubServiceBuilder {
         return patch(equalsTo(path));
     }
 
-    public RequestMatcherBuilder patch(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder patch(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(PATCH, path);
     }
 
@@ -118,7 +118,7 @@ public class StubServiceBuilder {
         return options(equalsTo(path));
     }
 
-    public RequestMatcherBuilder options(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder options(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(OPTIONS, path);
     }
 
@@ -132,7 +132,7 @@ public class StubServiceBuilder {
         return head(equalsTo(path));
     }
 
-    public RequestMatcherBuilder head(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder head(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(HEAD, path);
     }
 
@@ -146,7 +146,7 @@ public class StubServiceBuilder {
         return connect(equalsTo(path));
     }
 
-    public RequestMatcherBuilder connect(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder connect(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(CONNECT, path);
     }
 
@@ -154,7 +154,7 @@ public class StubServiceBuilder {
         return anyMethod(equalsTo(path));
     }
 
-    public RequestMatcherBuilder anyMethod(PlainTextFieldMatcher path) {
+    public RequestMatcherBuilder anyMethod(RequestFieldMatcher path) {
         return createRequestMatcherBuilder(ANY, path);
     }
 
@@ -167,15 +167,15 @@ public class StubServiceBuilder {
     StubServiceBuilder(String baseUrl) {
         String[] elements = baseUrl.split(SEPARATOR);
         if (baseUrl.contains(SEPARATOR)) {
-            this.scheme = exactlyMatches(elements[0]);
-            this.destination = exactlyMatches(elements[1]);
+            this.scheme = singletonList(newExactMatcher(elements[0]));
+            this.destination = singletonList(newExactMatcher(elements[1]));
         } else {
-            this.destination = exactlyMatches(elements[0]);
+            this.destination = singletonList(newExactMatcher(elements[0]));
         }
     }
 
-    StubServiceBuilder(PlainTextFieldMatcher matcher) {
-        this.destination = matcher.getFieldMatcher();
+    StubServiceBuilder(RequestFieldMatcher matcher) {
+        this.destination = singletonList(matcher);
     }
 
     /**
@@ -198,15 +198,6 @@ public class StubServiceBuilder {
     StubServiceBuilder addRequestResponsePair(final RequestResponsePair requestResponsePair) {
         this.requestResponsePairs.add(requestResponsePair);
         return this;
-    }
-
-    /**
-     * Used to create url pattenrs of {@link DelaySettings}.
-     *
-     * @return service destination
-     */
-    String getDestination() {
-        return this.destination.getMatchPattern();
     }
 
     /**
@@ -239,8 +230,8 @@ public class StubServiceBuilder {
         return this;
     }
 
-    private RequestMatcherBuilder createRequestMatcherBuilder(HttpMethod httpMethod, PlainTextFieldMatcher path) {
-        return new RequestMatcherBuilder(this, httpMethod, scheme, destination, path);
+    private RequestMatcherBuilder createRequestMatcherBuilder(HttpMethod httpMethod, RequestFieldMatcher path) {
+        return new RequestMatcherBuilder(this, httpMethod, scheme, destination, singletonList(path));
     }
 
     enum HttpMethod {
@@ -254,12 +245,12 @@ public class StubServiceBuilder {
         HEAD,
         ANY;
 
-        FieldMatcher getFieldMatcher() {
-            FieldMatcher fieldMatcher = null;
+        List<RequestFieldMatcher> getRequestFieldMatcher() {
+            List<RequestFieldMatcher> matchers = null;
             if (this != ANY) {
-                fieldMatcher = exactlyMatches(this.name());
+                matchers = singletonList(newExactMatcher(this.name()));
             }
-            return fieldMatcher;
+            return matchers;
         }
     }
 }

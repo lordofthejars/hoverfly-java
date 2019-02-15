@@ -1,40 +1,56 @@
 package io.specto.hoverfly.junit.core;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import io.specto.hoverfly.junit.api.HoverflyClient;
 import io.specto.hoverfly.junit.api.HoverflyClientException;
 import io.specto.hoverfly.junit.api.model.ModeArguments;
 import io.specto.hoverfly.junit.api.view.HoverflyInfoView;
+import io.specto.hoverfly.junit.core.model.DelaySettings;
+import io.specto.hoverfly.junit.core.model.RequestResponsePair;
 import io.specto.hoverfly.junit.core.model.Simulation;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.assertj.core.util.Lists;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.StartedProcess;
 
 import javax.net.ssl.SSLContext;
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import static io.specto.hoverfly.junit.core.HoverflyConfig.localConfigs;
 import static io.specto.hoverfly.junit.core.HoverflyConfig.remoteConfigs;
 import static io.specto.hoverfly.junit.core.HoverflyMode.*;
 import static io.specto.hoverfly.junit.core.SimulationSource.classpath;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.OK;
 
 public class HoverflyTest {
+
+    @Rule
+    public final SystemOutRule systemOut = new SystemOutRule();
 
     private static final int EXPECTED_PROXY_PORT = 8890;
     private Hoverfly hoverfly;
@@ -50,6 +66,51 @@ public class HoverflyTest {
     }
 
     @Test
+    public void shouldLogToStdOut() {
+        final Appender<ILoggingEvent> appender = Mockito.mock(Appender.class);
+        final Logger logger = (Logger) LoggerFactory.getLogger("hoverfly");
+        logger.addAppender(appender);
+        logger.setLevel(Level.INFO);
+
+        systemOut.enableLog();
+        hoverfly = new Hoverfly(localConfigs().logToStdOut(), SIMULATE);
+        hoverfly.start();
+
+        verify(appender, never()).doAppend(any());
+        assertThat(systemOut.getLogWithNormalizedLineSeparator()).containsPattern("Default proxy port has been overwritten       [^\n]*port[^\n]*=");
+    }
+
+    @Test
+    public void shouldLogToSlf4j() {
+        final String loggerName = randomAlphanumeric(20);
+        final Appender<ILoggingEvent> appender = Mockito.mock(Appender.class);
+        final Logger logger = (Logger) LoggerFactory.getLogger(loggerName);
+        logger.addAppender(appender);
+        logger.setLevel(Level.INFO);
+
+        systemOut.enableLog();
+        hoverfly = new Hoverfly(localConfigs().logger(loggerName), SIMULATE);
+        hoverfly.start();
+
+        final ArgumentCaptor<ILoggingEvent> eventArgumentCaptor = ArgumentCaptor.forClass(ILoggingEvent.class);
+        verify(appender, atLeastOnce()).doAppend(eventArgumentCaptor.capture());
+
+        assertThat(systemOut.getLogWithNormalizedLineSeparator()).doesNotContainPattern("Default proxy port has been overwritten       [^\n]*port[^\n]*=");
+
+        assertThat(eventArgumentCaptor.getAllValues()).as("'Default proxy port has been overwritten' log message")
+                .anyMatch(e -> e.getLevel() == Level.INFO && e.getFormattedMessage().startsWith("Default proxy port has been overwritten port="));
+    }
+
+    @Test
+    public void shouldRemoveShutdownHookIfAlreadyCleanedUp() {
+        hoverfly = new Hoverfly(localConfigs(), SIMULATE);
+        hoverfly.start();
+        hoverfly.close();
+
+        assertThat(Runtime.getRuntime().removeShutdownHook(hoverfly.shutdownThread.get())).as("Shutdown hook should be removed").isFalse();
+    }
+
+    @Test
     public void shouldDeleteTempFilesWhenStoppingHoverfly() {
         // Given
         hoverfly = new Hoverfly(SIMULATE);
@@ -61,6 +122,16 @@ public class HoverflyTest {
 
         // Then
         verify(tempFileManager).purge();
+    }
+
+    @Test
+    public void shouldSetStartedProcessToNullAfterProcessIsDestroyed() {
+        hoverfly = new Hoverfly(localConfigs(), SIMULATE);
+        hoverfly.start();
+        hoverfly.close();
+
+        Object startedProcess = Whitebox.getInternalState(hoverfly, "startedProcess");
+        assertThat(startedProcess).isNull();
     }
 
     @Test
@@ -86,6 +157,28 @@ public class HoverflyTest {
         Simulation exportedSimulation = hoverfly.getSimulation();
         assertThat(exportedSimulation.getHoverflyData()).isEqualTo(importedSimulation.getHoverflyData());
     }
+
+    @Test
+    public void shouldCombineAndImportMultipleSimulationSources() throws Exception {
+        startDefaultHoverfly();
+        // When
+        Simulation simulation1 = mapper.readValue(Resources.getResource("test-service.json"), Simulation.class);
+        Simulation simulation2 = mapper.readValue(Resources.getResource("test-service-https.json"), Simulation.class);
+        hoverfly.simulate(classpath("test-service.json"), classpath("test-service-https.json"));
+
+        // Then
+        Simulation exportedSimulation = hoverfly.getSimulation();
+        Sets.SetView<RequestResponsePair> expectedData = Sets.union(simulation1.getHoverflyData().getPairs(), simulation2.getHoverflyData().getPairs());
+
+        List<DelaySettings> expectedDelaySettings = new ArrayList<>();
+        expectedDelaySettings.addAll(simulation1.getHoverflyData().getGlobalActions().getDelays());
+        expectedDelaySettings.addAll(simulation2.getHoverflyData().getGlobalActions().getDelays());
+
+        assertThat(exportedSimulation.getHoverflyData().getPairs()).containsExactlyInAnyOrderElementsOf(expectedData);
+        assertThat(exportedSimulation.getHoverflyData().getGlobalActions().getDelays()).containsExactlyInAnyOrderElementsOf(expectedDelaySettings);
+    }
+
+
 
     @Test
     public void shouldThrowExceptionWhenExportSimulationWithoutPath() {
@@ -269,9 +362,12 @@ public class HoverflyTest {
 
     @Test
     public void shouldCopyMiddlewareScriptToTempFolderIfLocalMiddlewareEnabled () {
+        String rawFilename = "middleware.py";
+        String path = "middleware" + File.separator + rawFilename;
+
         // Given
         hoverfly = new Hoverfly(localConfigs()
-           .localMiddleware("python", "middleware/middleware.py"), SIMULATE);
+           .localMiddleware("python", path), SIMULATE);
         TempFileManager tempFileManager = spy(TempFileManager.class);
         Whitebox.setInternalState(hoverfly, "tempFileManager", tempFileManager);
 
@@ -279,7 +375,7 @@ public class HoverflyTest {
         hoverfly.start();
 
         // Then
-        verify(tempFileManager).copyClassPathResource("middleware/middleware.py", "middleware.py");
+        verify(tempFileManager).copyClassPathResource(path, rawFilename);
     }
 
 
@@ -387,6 +483,39 @@ public class HoverflyTest {
     }
 
     @Test
+    public void shouldSetModeArgumentsForCaptureMode() {
+        hoverfly = new Hoverfly(localConfigs().captureAllHeaders().enableStatefulCapture(), CAPTURE);
+
+        HoverflyClient hoverflyClient = createMockHoverflyClient(hoverfly);
+        when(hoverflyClient.getHealth()).thenReturn(true);
+
+        hoverfly.start();
+
+        final ArgumentCaptor<ModeArguments> arguments = ArgumentCaptor.forClass(ModeArguments.class);
+        verify(hoverflyClient).setMode(eq(HoverflyMode.CAPTURE), arguments.capture());
+
+        assertThat(arguments.getValue().isStateful()).isTrue();
+        assertThat(arguments.getValue().getHeadersWhitelist()).containsOnly("*");
+    }
+
+    @Test
+    public void shouldResetModeWithModeArguments() {
+        hoverfly = new Hoverfly(localConfigs().captureAllHeaders().enableStatefulCapture(), CAPTURE);
+
+        HoverflyClient hoverflyClient = createMockHoverflyClient(hoverfly);
+
+        hoverfly.resetMode(CAPTURE);
+
+        final ArgumentCaptor<ModeArguments> arguments = ArgumentCaptor.forClass(ModeArguments.class);
+        verify(hoverflyClient).setMode(eq(HoverflyMode.CAPTURE), arguments.capture());
+
+        assertThat(arguments.getValue().isStateful()).isTrue();
+        assertThat(arguments.getValue().getHeadersWhitelist()).containsOnly("*");
+    }
+
+
+
+    @Test
     public void shouldSetUpstreamProxy() {
         hoverfly = new Hoverfly(localConfigs().upstreamProxy(new InetSocketAddress("127.0.0.1", 8900)), SIMULATE);
 
@@ -422,21 +551,6 @@ public class HoverflyTest {
     }
 
     @Test
-    public void shouldImportExpectedSimulationInDiffMode() throws Exception {
-        // given
-        startDefaultHoverfly();
-        URL resource = Resources.getResource("test-service.json");
-        Simulation importedSimulation = mapper.readValue(resource, Simulation.class);
-
-        // when
-        hoverfly.simulate(classpath("test-service.json"));
-
-        // then
-        Simulation exportedSimulation = hoverfly.getSimulation();
-        assertThat(exportedSimulation.getHoverflyData()).isEqualTo(importedSimulation.getHoverflyData());
-    }
-
-    @Test
     public void shouldTolerateFailureOnResetDiff() {
         // given
         hoverfly = new Hoverfly(DIFF);
@@ -448,6 +562,16 @@ public class HoverflyTest {
 
         // then
         verify(hoverflyClient).cleanDiffs();
+    }
+
+    @Test
+    public void shouldAllowTLSVerificationToBeDisabled() {
+        systemOut.enableLog();
+        hoverfly = new Hoverfly(localConfigs().logToStdOut().disableTlsVerification(), SIMULATE);
+        hoverfly.start();
+
+        assertThat(systemOut.getLogWithNormalizedLineSeparator())
+                .containsPattern("TLS certificate verification has been disabled");
     }
 
     @After

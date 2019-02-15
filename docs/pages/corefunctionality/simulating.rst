@@ -18,11 +18,11 @@ The core of this library is the Hoverfly class, which abstracts away and orchest
 When running Hoverfly standalone you can clean up the simulation and journal logs by calling ``reset`` method.
 
 .. code-block:: java
+
     try (Hoverfly hoverfly = new Hoverfly(configs(), SIMULATE)) {
 
         hoverfly.start();
         // can import or do some requests
 
         hoverfly.reset();
-
     }

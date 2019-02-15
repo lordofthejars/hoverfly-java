@@ -22,7 +22,7 @@ for this is https://en.wikipedia.org/wiki/Service_virtualization[Service Virtual
 - Use externally managed Hoverfly cluster for API simulations
 - Request verification
 - Response templating
-- Stateful simulation
+- Stateful capture / simulation
 - http://hoverfly-java.readthedocs.io/en/latest/pages/junit5/junit5.html[JUnit 5 extension^]
 
 == Documentation
@@ -35,7 +35,7 @@ Full documentation is available http://hoverfly-java.readthedocs.io/[here^]
 <dependency>
     <groupId>io.specto</groupId>
     <artifactId>hoverfly-java</artifactId>
-    <version>0.10.2</version>
+    <version>0.11.2</version>
     <scope>test</scope>
 </dependency>
 ```
@@ -102,6 +102,8 @@ Contributions are welcome!
 To submit a pull request you should fork the Hoverfly-Java repository, and make your change on a feature branch of your fork.
 
 As of `v0.10.2`, hoverfly binaries are no longer stored in the repository. You should run `./gradlew clean test` once to cache the binaries for development with your IDE.
+
+If you have forked this project prior to `v0.10.2`, please re-fork to get a slimmer version of the repository.
 
 == Issues
 

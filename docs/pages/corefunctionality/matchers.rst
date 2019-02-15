@@ -7,10 +7,7 @@ Hoverfly-Java abstracts away some of the complexity of building the `request fie
 
 By default, the DSL request builder assumes exact matching when you pass in a string.
 
-You can also pass in a matcher created by the ``HoverflyMatchers`` factory class. 
-The supported types of matchers are limited to ``exactMatch``, ``globMatch``, and ``regexMatch`` for URL, path and query.
-
-The ``body`` method supports all the above plus JSON/XML equality matching, and JSONPath/XPath matching.
+You can also pass in a matcher created by the ``HoverflyMatchers`` factory class.
 
 Here are some examples:
 
@@ -76,7 +73,7 @@ Headers are not used for matching unless they are specified. If you need to set 
         service("www.my-test.com")
             .post("/api/bookings")
             .body("{\"flightId\": \"1\"}")
-            .header("Content-Type", "application/json")     // Count as a match when request contains this Content-Type header
+            .header("Content-Type", any())     // Count as a match when request contains this Content-Type header
             .willReturn(created("http://localhost/api/bookings/1"))
     }
 
